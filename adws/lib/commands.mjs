@@ -57,7 +57,8 @@ export function claudeCommand(prompt, phase = "planning", permissionMode = "dont
       deniedTools,
       "--strict-mcp-config",
       "--mcp-config",
-      "{}",
+      '{"mcpServers":{}}',
+      "--",
       prompt,
     ],
   };

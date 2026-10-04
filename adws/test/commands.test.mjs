@@ -29,6 +29,9 @@ test("planner and implementer use specialized commands in separate invocations",
   assert.match(implementer.args.at(-1), /^\/implement /);
   assert.ok(planner.args.includes("Read,Grep,Glob,Write,Edit"));
   assert.ok(planner.args.includes("Bash,WebFetch,WebSearch"));
+  const mcpConfigIndex = planner.args.indexOf("--mcp-config");
+  assert.equal(planner.args[mcpConfigIndex + 1], '{"mcpServers":{}}');
+  assert.equal(planner.args[mcpConfigIndex + 2], "--");
   assert.match(implementer.args.find((arg) => arg.includes("Bash(go test")), /Bash\(git diff \*\)/);
   assert.ok(implementer.args.includes("WebFetch,WebSearch"));
   assert.notDeepEqual(planner.args, implementer.args);
