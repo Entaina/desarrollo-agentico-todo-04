@@ -66,7 +66,7 @@ export function claudeCommand(prompt, phase = "planning", permissionMode = "dont
 export function validationCommands() {
   return [
     { command: "soda", args: ["migrate", "-e", "test"] },
-    { command: "go", args: ["test", "-p", "1", "./..."] },
+    { command: "go", args: ["test", "-p", "1", "./..."], env: { GO_ENV: "test" } },
     { command: "go", args: ["vet", "./..."] },
     { command: "go", args: ["build", "./..."] },
   ];
@@ -74,5 +74,6 @@ export function validationCommands() {
 
 export function displayCommand(spec) {
   const quote = (part) => (/^[A-Za-z0-9_./:@=-]+$/.test(part) ? part : JSON.stringify(part));
-  return [spec.command, ...spec.args].map(quote).join(" ");
+  const environment = Object.entries(spec.env ?? {}).map(([key, value]) => `${key}=${quote(value)}`);
+  return [...environment, spec.command, ...spec.args].map(quote).join(" ");
 }

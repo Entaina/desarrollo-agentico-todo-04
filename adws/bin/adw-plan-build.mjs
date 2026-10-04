@@ -22,9 +22,10 @@ function parseArgs(argv) {
 
 function run(spec, { capture = false } = {}) {
   console.log(`$ ${displayCommand(spec)}`);
+  const baseEnv = spec.command === "claude" ? sanitizedAgentEnv() : process.env;
   const result = spawnSync(spec.command, spec.args, {
     encoding: "utf8",
-    env: spec.command === "claude" ? sanitizedAgentEnv() : process.env,
+    env: { ...baseEnv, ...(spec.env ?? {}) },
     stdio: capture ? ["ignore", "pipe", "pipe"] : "inherit",
   });
   if (result.error) throw new Error(`No se pudo ejecutar ${spec.command}: ${result.error.message}`);

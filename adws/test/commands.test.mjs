@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { claudeCommand, implementationPrompt, planningPrompt, validationCommands } from "../lib/commands.mjs";
+import { claudeCommand, displayCommand, implementationPrompt, planningPrompt, validationCommands } from "../lib/commands.mjs";
 import { branchName, commitMessage, planPath, slugify } from "../lib/names.mjs";
 
 const issue = { number: 24, title: "Añadir filtro: tareas completadas", body: "Criterios", url: "https://example.test/24" };
@@ -37,8 +37,9 @@ test("planner and implementer use specialized commands in separate invocations",
 test("review commands match tools declared by this Go repository", () => {
   assert.deepEqual(validationCommands(), [
     { command: "soda", args: ["migrate", "-e", "test"] },
-    { command: "go", args: ["test", "-p", "1", "./..."] },
+    { command: "go", args: ["test", "-p", "1", "./..."], env: { GO_ENV: "test" } },
     { command: "go", args: ["vet", "./..."] },
     { command: "go", args: ["build", "./..."] },
   ]);
+  assert.equal(displayCommand(validationCommands()[1]), "GO_ENV=test go test -p 1 ./...");
 });
