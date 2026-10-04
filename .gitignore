@@ -1,4 +1,7 @@
-bin/
+/bin/
 tmp/
 *.log
 .env
+
+# Runtime state and captured issue payloads from the agentic workflow.
+.adw-state/

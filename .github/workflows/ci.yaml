@@ -6,6 +6,24 @@ on:
     branches: [main]
 
 jobs:
+  adw:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Tests de la capa agéntica
+        run: node --test adws/test/*.test.mjs
+
+      - name: Dry-runs sin red
+        run: |
+          node adws/bin/adw-plan-build.mjs --issue-file adws/fixtures/example-issue.json --dry-run
+          node adws/bin/trigger-github.mjs --issues-file adws/fixtures/example-issues.json --dry-run --once
+
   test:
     runs-on: ubuntu-latest
 

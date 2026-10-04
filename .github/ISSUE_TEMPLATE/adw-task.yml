@@ -1,0 +1,41 @@
+name: Encargo para el ADW
+description: Crea un issue estructurado que entra en la cola agéntica configurada
+labels:
+  - adw:ready
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Este formulario es la señal persistente del workflow. Al enviarlo, `adw:ready` se aplica automáticamente; no hace falta una orden adicional para este caso.
+  - type: dropdown
+    id: type
+    attributes:
+      label: Tipo observado
+      description: Baseline del laboratorio; si no encaja, usa chore y explica la diferencia.
+      options:
+        - bug
+        - feature
+        - chore
+    validations:
+      required: true
+  - type: textarea
+    id: objective
+    attributes:
+      label: Objetivo
+      description: Resultado observable que se busca.
+    validations:
+      required: true
+  - type: textarea
+    id: context
+    attributes:
+      label: Contexto y restricciones
+      description: Estado actual, límites y datos no sensibles relevantes.
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Criterios de aceptación
+      description: Comportamientos y comprobaciones que permitirán revisar el resultado.
+    validations:
+      required: true

@@ -1,0 +1,9 @@
+{
+  "number": 42,
+  "title": "Añadir filtros para tareas pendientes y completadas",
+  "body": "La lista debe permitir mostrar todas, pendientes o completadas sin perder el filtro al crear una tarea.",
+  "url": "https://github.com/example/desarrollo-agentico-todo/issues/42",
+  "labels": [
+    { "name": "adw:feature" }
+  ]
+}
