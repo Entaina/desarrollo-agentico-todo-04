@@ -60,7 +60,7 @@ cat "$TEST_ROOT/issues"
 `)
 	write("claude", `#!/usr/bin/env bash
 set -euo pipefail
-[[ $# == 2 && "$1" == -p ]] || exit 90
+[[ $# == 4 && "$1" == -p && "$3" == --permission-prompts && "$4" == none ]] || exit 90
 if IFS= read -r unexpected; then exit 91; fi
 printf 'START:%s\n' "$2" >> "$TEST_ROOT/events"
 printf '%s' "$PWD" > "$TEST_ROOT/cwd"
@@ -152,6 +152,16 @@ prompt: >-
 	pass := "START:" + prompt + "\nEND:" + prompt + "\nSLEEP:7\n"
 	if events != pass+pass || !strings.Contains(args, "--label\nmi-etiqueta\n") {
 		t.Fatalf("YAML config must control the literal prompt, label and interval: %q, %q", events, args)
+	}
+}
+
+func TestTriggerPromptCannotOverridePermissionPrompts(t *testing.T) {
+	body := strings.Replace(defaultConfig, "prompt: /adw {{issue_url}}", "prompt: /adw {{issue_url}} --permission-prompts terminal", 1)
+	output, events, _, err := runTrigger(t, newIssue+"\n", body, nil, "--once")
+	prompt := "/adw " + newIssue + " --permission-prompts terminal"
+	want := "START:" + prompt + "\nEND:" + prompt + "\n"
+	if err != nil || events != want {
+		t.Fatalf("prompt must stay literal while CLI permission prompts remain none: err=%v, events=%q, output=%s", err, events, output)
 	}
 }
 

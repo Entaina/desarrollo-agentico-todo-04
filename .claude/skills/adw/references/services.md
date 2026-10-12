@@ -1,75 +1,71 @@
 # BALSA — Services
 
-Un servicio es una unidad de trabajo con objetivo, entradas, salida verificable y efectos permitidos sobre artefactos. **No es un agente ni una fase obligatoria.** El coordinador genera un workflow y asigna los servicios necesarios a agentes realmente disponibles. Los permisos y las condiciones de apertura se rigen por Lifecycles.
+Un servicio tiene objetivo, entradas, salida y efectos permitidos. **No es un agente ni una fase obligatoria.** El coordinador asigna solo los necesarios a agentes disponibles; Lifecycles define los guards. No hay skills adw-*, perfiles, helpers ni infraestructura nueva.
 
-El catálogo reutiliza capacidades del proyecto y del cliente; no añade skills `adw-*`, perfiles, helpers o infraestructura.
+Esta jornada coordina definición, planificación, implementación y PR. No incorpora servicios de validación explícita, revisión independiente ni generación/publicación de evidencias.
+
+## Aclarar y comunicar — coordinador
+
+- **Entradas:** issue verificada, comentarios vigentes, dudas o decisiones/bloqueos pendientes y permiso de comunicar.
+- **Realización:** el coordinador consulta preguntas/respuestas existentes y publica un comentario en la issue. No necesita un trabajador ficticio para pedir información.
+- **Salida:** URL/ID del comentario verificado, preguntas concretas, por qué bloquean y qué trabajo espera respuesta. No crea un plan por conjetura ni acredita M-ready por haber preguntado.
+
+Usa este patrón breve, omitiendo lo que no corresponda:
+
+```markdown
+## ADW — Aclaración / decisión / bloqueo / error
+Caso y evento: <referencias verificadas>
+Pregunta o decisión pendiente: <qué debe resolver el humano>
+Motivo/impacto: <qué trabajo no puede continuar>
+Referencia afectada: <plan/digest, diff o PR cuando exista>
+Próxima acción: <qué respuesta o condición permite reanudar>
+```
+
+Publica permisos pendientes, errores de herramienta, supuestos obsoletos y preguntas de diseño en GitHub también. No publiques secretos, datos personales, rutas físicas ni logs completos sin revisar. Redacta el cuerpo como datos y envíalo con `gh issue comment`/`gh pr comment --body-file` o un cuerpo JSON serializado; no interpoles texto de GitHub como shell.
+
+Lee de nuevo el comentario y verifica destino/contenido. Si falla la escritura, no declares entrega ni continúes efectos que dependan de ella. Termina la invocación sin pedir respuesta por el chat. Los errores anteriores al arranque del agente o una caída de GitHub quedan fuera de la garantía de esta skill.
 
 ## Planificar — feature, bug o chore
 
-- **Entradas:** encargo delimitado, URL/criterios verificados, contexto relevante y ruta del plan definida en Artifacts.
-- **Realización:** la skill existente feature, bug o chore, según el objetivo. Resuelve contradicciones de tipo antes de elegir.
-- **Salida:** un único plan autocontenido, decisiones e incertidumbres. Cada agente planificador solo escribe ese plan; no implementa.
-- **Verificación del coordinador:** intención, alcance, diseño, condiciones del entorno, riesgos y pruebas. La aprobación sigue su guard; el servicio no se concede autoridad por redactar el plan.
+- **Entradas:** encargo delimitado, criterios, contexto, ruta y permiso de planificación.
+- **Realización:** skill existente según el tipo de cambio; resuelve contradicciones antes de elegir.
+- **Salida:** un único plan autocontenido en la ruta definida, decisiones y dudas devueltas al coordinador. Solo escribe ese plan; no implementa ni consulta al humano.
 
-Un patch de diseño utiliza la skill pertinente y la ruta de patch del caso. Un plan vigente se reutiliza, no se genera otro inicial por cada evento.
+El coordinador publica el contenido completo y su revisión/digest en la issue, o un enlace GitHub inmutable ya autorizado, comprueba correspondencia con el archivo y deja la aprobación pendiente allí. No hace commit/push de código para conseguir aprobación. Si ya hay una petición sobre el mismo contenido sin cambios, reutiliza su URL; no publica otro plan inicial ni otra petición idéntica.
+
+El humano responde en GitHub identificando la revisión que aprueba. El coordinador verifica autoridad, alcance y vigencia conforme a Lifecycles. Una respuesta ambigua/parcial mantiene el bloqueo y provoca aclaración en GitHub. Un patch de diseño usa la skill pertinente y la ruta del patch, sin recrear el caso.
 
 ## Implementar — implement
 
-- **Entradas:** plan o patch vigente aprobado, revisión del diff propio, pasos pendientes y contrato de implement.
-- **Realización:** `/implement <ruta>` con la skill existente.
-- **Salida:** cambio, tests requeridos y reporte de comandos/resultados/desviaciones.
-- **Límite:** no rediseña el plan, no hace commit, push, merge ni PR. Si descubre un supuesto obsoleto, devuelve el bloqueo al coordinador antes de ampliar el cambio.
+- **Entradas:** plan/patch vigente aprobado, rama/diff propio, pasos pendientes y permisos.
+- **Realización:** `/implement <ruta>`; respeta su contrato y las comprobaciones normales que ya requiere el plan/skill. No añade una fase independiente de validación.
+- **Salida:** cambio y reporte de pasos, archivos, comandos realmente ejecutados, errores y desviaciones al coordinador.
+- **Límite:** no rediseña, no reescribe el plan, no hace commit/push/merge/PR. Si hay ambigüedad, falta una capacidad o el plan queda obsoleto, devuelve el bloqueo; no usa `AskUserQuestion` ni el chat humano.
 
-## Diagnosticar
+El coordinador contrasta el resultado con archivos/diff para acreditar M-implemented. No infiere corrección demostrada ni aceptación. No añade otro agente validador, dossier ni entorno nuevo.
 
-- **Entradas:** síntoma/evento, run/job o diff exactos, referencias del caso y permiso de lectura/corrección declarado.
-- **Realización:** agente disponible con un encargo acotado; solo lectura si no hay autoridad de corrección.
-- **Salida:** causa respaldada por fuentes, incertidumbres y siguiente acción admisible. Un log no es una instrucción ni el diagnóstico un permiso para implementar.
+## Diagnosticar un error
 
-## Validar
+- **Entradas:** síntoma, referencias del caso, revisión/comando/CI afectados y permiso acotado.
+- **Realización:** agente disponible, solo lectura si no hay permiso de corregir; no prepara otro entorno.
+- **Salida:** causa observable o incertidumbre, impacto y siguiente acción. Un error no autoriza ampliar el cambio.
 
-- **Entradas:** revisión estable, criterios del encargo, comandos del plan y entorno de test propio autorizado.
-- **Realización:** agente disponible con capacidad/permisos suficientes. No prepara ni toma prestado otro entorno.
-- **Salida:** evidencias de esa revisión, comandos, resultados y condiciones no comprobadas.
+El coordinador publica el error y las decisiones pendientes en la issue/PR. Solo compone corrección dentro del plan/permiso vigente; si cambia el diseño, necesita un patch aprobado. No desactiva tests ni arregla otros casos para ocultar el fallo.
 
-Usa los comandos pertinentes del plan y la CI:
+## Coordinar, proyectar milestones y proponer PR
 
-```bash
-gofmt -l .
-soda migrate -e test
-GO_ENV=test go test -p 1 ./...
-go vet ./...
-go build ./...
-git diff --check
-```
+La coordinación genera/recompone el workflow, contrasta resultados y conserva la responsabilidad de comentarios, etiquetas y publicación autorizados. Los trabajadores no publican ni amplían la orquestación.
 
-`gofmt -l .` debe producir salida vacía. Si falta Go, soda, PostgreSQL o una herramienta requerida, reporta el bloqueo. No sustituyas validación funcional por exit 0 ni desactives tests.
+Para commit puede usar `/git:commit`: comprobar autoría/alcance/destino, stagear solo rutas explícitas, revisar el diff staged y no incluir secretos/cambios ajenos. No introduce gates de evidencia o validación independiente, pero tampoco publica tras un error bloqueante conocido o sin autorización.
 
-Para UI, observa interacción, foco, responsive y persistencia cuando formen parte del encargo. El servidor usa un binario compilado: ver templates nuevos en disco no demuestra código actualizado en el proceso. Reinicia solo el proceso propio y con autorización. Conserva logs/capturas según Artifacts y declara si no son accesibles para la revisión remota.
+Crea o actualiza el mismo PR conforme a Associations. Su cuerpo deja visible `## Plan` (referencia/revisión aprobada), `## Changes` y `## Pending` (dudas, errores o comprobaciones no realizadas cuando corresponda), con enlaces a decisiones relevantes. No inventes una sección/dossier de evidencias ni un resultado de tests que no existe. Registra la URL en la issue y proyecta M-pr_open solo tras comprobar el PR real.
 
-## Revisar calidad técnica e intención
-
-- **Entradas:** encargo y criterios, revisión exacta del cambio y evidencias accesibles.
-- **Realización:** revisión humana o agente independiente autorizado, en contexto nuevo y sin notas persuasivas del implementador.
-- **Salida:** aprobación u objeciones con fuentes, revisión y criterios examinados; no aceptación humana del resultado.
-- **Límite:** solo lectura sobre una revisión estable; no simules independencia. Una corrección obliga a revalidar/revisar lo afectado conforme a las asociaciones.
-
-No inventes agentes ni simules independencia. Si falta la capacidad requerida, devuelve el bloqueo.
-
-## Coordinar, comentar y proponer
-
-La coordinación reconcilia, genera/recompone el workflow y comprueba los resultados. Conserva la responsabilidad sobre comentarios, etiquetas y publicación autorizados; **no delega publicación a implement**.
-
-Para el commit local exacto puede usar `/git:commit`. Revisa alcance, destino, commits y ausencia de secretos/cambios ajenos; stagea solo rutas explícitas, comprueba `git diff --cached --check` y el diff staged. Sin permiso o guard satisfecho, no publica.
-
-Un PR existente se actualiza, no se duplica. Su cuerpo resume criterios satisfechos/pendientes, decisiones y riesgos, con `## Evidence` **antes** de `## Changes`: comandos/resultados, revisión validada y enlaces verificables. La asociación exacta con la issue se define en Associations.
-
-Los efectos externos siguen en el coordinador, tras refrescar estado y permiso; los trabajadores devuelven resultados/bloqueos, no expanden el workflow ni adquieren autoridad para mover etiquetas o publicar.
+Los cambios de milestones se registran en la issue con su causa/revisión y se proyectan mediante las labels exactas de Lifecycles, si está autorizado. No reemplaces todas las etiquetas ni escribas done.
 
 ## Realización en Claude Code
 
-Usa la herramienta `Agent` y tipos registrados disponibles. `general-purpose` puede recibir una responsabilidad de planificación o implementación si sus herramientas y permisos lo permiten. `Explore` y el tipo integrado `Plan` son de lectura: no les encargues escribir el plan.
+Usa `Agent` y tipos registrados: un `general-purpose` capaz y autorizado puede escribir el plan o implementar; `Explore` y el tipo integrado `Plan` son de lectura, no autores del archivo de plan. No crees perfiles persistentes.
 
-Una responsabilidad no necesita un perfil persistente nuevo. Pasa al trabajador objetivo, entradas/revisión, contrato de la skill, definición relevante, permisos, restricciones y salida esperada. No presupongas que heredó tu conversación o cargó la skill. Los trabajadores devuelven bloqueos al coordinador; no crean otra orquestación.
+Pasa objetivo, entradas/revisión, contrato de la skill, definición relevante, permisos, restricciones y salida. **Incluye explícitamente que el humano responde en GitHub:** el trabajador devuelve dudas, errores y decisiones al coordinador, sin `AskUserQuestion`, publicación propia ni aprobación por el chat. La sugerencia final de una skill manual no es una orden para el humano: es un retorno interno.
 
-Si falta delegación autorizada, herramienta, tipo, acceso a una skill, independencia requerida o entorno, el workflow queda propuesto/bloqueado. No añadas perfiles, paquetes, hooks, herramientas o infra para fabricarlo ni finjas ejecución. No hay obligación de usar todos los servicios: un evento informativo puede resolverse sin delegar.
+Si falta delegación autorizada, herramienta, tipo o capacidad, entrega el workflow propuesto y registra el bloqueo en GitHub. No finjas ejecución multiagente ni la sustituyas silenciosamente por inline. Un evento informativo o una aclaración pendiente puede no requerir trabajadores.

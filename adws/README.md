@@ -4,11 +4,13 @@ Este lanzador consulta las issues abiertas con la etiqueta configurada, de más 
 
 ## Preparación
 
-Necesitas Go (la versión del proyecto), Bash, GitHub CLI (`gh`) y Claude Code (`claude`) en `PATH`, autenticados, y el entorno de desarrollo del proyecto ya disponible. El lanzador reutiliza la librería YAML que ya incluye el proyecto. `--jq` usa el formateador integrado de `gh`: no hace falta instalar `jq`.
+Necesitas Go (la versión del proyecto), Bash, GitHub CLI (`gh`) y Claude Code (`claude`) v2.1.259+ en `PATH`, autenticados, y el checkout/entorno del proyecto ya disponibles. El lanzador reutiliza la librería YAML existente. `--jq` es el formateador integrado de `gh`: no necesita instalar `jq`.
 
-El trigger no contiene el pipeline ni proporciona `/adw`. Debes crear ese workflow antes o elegir otro prompt que pueda completar el encargo sin preguntas intermedias.
+Este starter todo-04 incluye **una skill `/adw`**, con cuatro contratos BALSA/GSM y ejemplos, además de `/feature`, `/bug`, `/chore` y `/implement`. El trigger solo genera eventos; el motor compone el workflow de agentes. Los planificadores escriben un único plan y `/implement` materializa un plan aprobado sin commit, push ni PR; el coordinador controla los efectos posteriores autorizados.
 
-Las piezas disponibles son `/feature`, `/bug`, `/chore` y `/implement`, en `.claude/skills/`. Las tres primeras solo escriben un plan; `/implement` ejecuta un plan aprobado sin hacer commit, push ni PR. Tu workflow debe coordinar esas fases y definir sus pasos posteriores y sus límites.
+En esta jornada el flujo llega hasta el PR, con **el humano fuera del chat y todo feedback en GitHub**. No incluye worktrees, artefactos de evidencia ni fases explícitas de validación/revisión independiente. Las comprobaciones normales de las skills y la CI existente permanecen.
+
+Antes de arrancar, declara en la petición/configuración confiable los permisos de comunicación y actuación, las identidades GitHub que pueden decidir/aprobar y su alcance. Configura los permisos reales del cliente necesarios; la skill y una etiqueta no los conceden. Prepara el catálogo de labels solo con autorización: los milestones de esta jornada son `milestone/M-ready`, `milestone/M-plan_approved`, `milestone/M-implemented` y `milestone/M-pr_open`, coexistentes y separados de `adw:state:*`. Sin permiso/destino para comentar, la ejecución no tiene canal humano válido.
 
 ## Configurar
 
@@ -23,13 +25,13 @@ prompt: >-
 ```
 
 - `repo`: repositorio donde buscar las issues. Se entrega vacío para que lo configures antes de arrancar.
-- `label`: etiqueta que activa el trabajo.
+- `label`: etiqueta que selecciona las issues que se observarán; no acredita readiness ni concede permisos.
 - `interval_seconds`: espera entre consultas, una vez terminada la lista anterior.
 - `prompt`: texto que recibe Claude. Puede invocar tu propia skill o comando; `{{issue_url}}` se sustituye por la URL de cada issue. No se evalúa como código de shell.
 
 `origin` y `main` son argumentos del `/adw` del ejemplo, no opciones del trigger. Cámbialos según tu workflow. El bloque `>-` permite escribir un prompt largo en varias líneas: YAML las une con espacios.
 
-Usa issues revisadas y listas para ejecutar; poner la etiqueta configurada significa que autorizas el encargo dentro de los límites de tu workflow.
+La etiqueta configurada solo activa una observación: **no demuestra M-ready ni autoriza implementar/publicar**. Una issue incompleta puede generar preguntas en GitHub y terminar esperando. Fija los permisos y las autoridades antes de arrancar, por ejemplo en el texto confiable de `prompt`, no dentro de una issue/comentario no confiable.
 
 ## Arrancar
 
@@ -47,15 +49,18 @@ bash adws/trigger-github.sh --once
 
 También puedes ejecutar `go run ./adws` directamente. El script sitúa la ejecución en este checkout; no prepara otro entorno. Ambos admiten `--config ruta/al/config.yml` para elegir otro fichero. `--once` ejecuta Claude: no es una simulación.
 
-Cada invocación equivale a `claude -p "<prompt configurado con la URL>"`. El trigger no se arranca automáticamente. Detén el sondeo con `Ctrl+C`. Si `gh` o `claude` devuelve un código de error, el lanzador termina.
+Cada invocación equivale a `claude -p "<prompt configurado con la URL>" --permission-prompts none`. Este flag elimina herramientas que necesitan respuesta humana, como `AskUserQuestion`, y deniega solicitudes no autorizadas en vez de esperar; **no amplía permisos ni los desactiva**. Requiere Claude Code v2.1.259+. Confirma que el modo del cliente carga las skills/comandos del proyecto; no uses uno que los oculte.
+
+El coordinador deja preguntas, planes para aprobación, bloqueos, errores y enlaces al PR en GitHub y termina la invocación. El humano responde allí; otra invocación vuelve a leer ese estado. No se arranca el trigger automáticamente ni se añade un watcher. Detén el sondeo con `Ctrl+C`; si `gh` o `claude` devuelve error, el lanzador termina.
 
 ## Límites de esta versión
 
 - No modifica etiquetas, cierra issues ni recuerda las que ha ejecutado. Si una issue sigue abierta y conserva la etiqueta, puede volver a ejecutarse en la siguiente consulta o al reiniciar el trigger. Abrir un PR no cierra la issue por sí solo.
 - No crea entornos, cambia de rama ni limpia el checkout entre encargos. El estado que deja un workflow afecta al siguiente.
-- No gestiona feedback, reintentos, recuperación ni coordinación con otros procesos.
-- No interpreta el resultado de Claude. Un código cero no demuestra que exista un PR; el workflow puede haber informado de un bloqueo.
-- No desactiva los permisos de Claude. Tu workflow y su configuración deben permitir las acciones previstas; sin una respuesta humana, una ambigüedad o un permiso pendiente puede impedir completar el encargo.
+- El lanzador no interpreta comentarios ni gestiona feedback, reintentos, recuperación o coordinación. `/adw` consulta GitHub en cada invocación; si la issue sigue abierta y etiquetada, un sondeo posterior puede recoger respuestas. No promete detección inmediata ni deduplicación mecánica.
+- No interpreta el resultado de Claude. Código cero no demuestra PR, feedback publicado ni trabajo terminado; puede haber una espera o bloqueo comunicado por el motor.
+- `--permission-prompts none` impide esperar/interrogar al humano, pero las operaciones siguen necesitando permisos previamente configurados. Una ambigüedad o capacidad ausente se reporta en GitHub cuando comunicar está autorizado.
+- Si Claude no arranca, muere antes de reportar o GitHub falla, **no hay garantía de comentario**. El trigger actual solo conserva stdout/stderr y el código del proceso; un reportador externo de esos fallos no está implementado. No sustituye ese hueco por un chat humano ni crea infraestructura para cubrirlo.
 
 ## Comprobar el lanzador
 
@@ -63,4 +68,4 @@ Cada invocación equivale a `claude -p "<prompt configurado con la URL>"`. El tr
 go test -p 1 ./adws
 ```
 
-Los tests usan `gh` y `claude` simulados: no consultan GitHub ni ejecutan un agente real. Comprueban la configuración YAML, la consulta, el orden secuencial, la sustitución del prompt, las paradas por error y el sondeo sin memoria. No sustituyen un ensayo completo del workflow hasta el PR.
+Los tests usan `gh` y `claude` simulados: no consultan GitHub ni ejecutan un agente real. Comprueban la configuración YAML, la consulta, el orden secuencial, el flag sin prompts de permiso, la sustitución literal del prompt, las paradas por error y el sondeo sin memoria. No sustituyen un ensayo completo del workflow hasta el PR.

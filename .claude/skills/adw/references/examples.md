@@ -1,50 +1,51 @@
 # Ejemplos de composición ante eventos
 
-Los ejemplos ilustran cómo generar un workflow desde el estado. No son pipelines prescritos. Los nombres describen responsabilidades asignadas mediante prompts a agentes reales disponibles, no nuevos perfiles o skills.
+Composiciones ilustrativas, no pipelines obligatorios ni ejecuciones observadas. Los nombres son responsabilidades de agentes disponibles, no perfiles/skills nuevos. Esta jornada no usa worktrees, artefactos de evidencia ni fases de validación/revisión independiente.
 
-## Evento: observar un encargo sin plan
+## Issue incompleta: preguntas en GitHub
 
-Estado: issue completa, sin plan ni PR; hay autorización de delegación y planificación, pero no de implementación.
+Estado: comportamiento o alcance ambiguos; comunicar está autorizado, pero M-ready no está acreditado.
 
-Workflow generado:
+- El coordinador lee las preguntas/respuestas existentes y publica solo las dudas pendientes en la **issue**, con motivo y trabajo bloqueado. Verifica el comentario y registra su URL.
+- Workflow sin trabajadores de planificación ejecutables. Termina la invocación; no pregunta por el chat ni lanza un watcher.
+- Si otro sondeo no ve respuestas ni contexto nuevo, reutiliza la petición; no vuelve a comentarla. Si una respuesta solo resuelve parte, mantiene pendientes las demás.
+- Al quedar el encargo claro, acredita M-ready y proyecta `milestone/M-ready` cuando esté autorizado. No confunde esa label con la prueba de claridad.
 
-- **U1 — planificador:** tipo disponible con capacidad de escritura; usa feature, bug o chore según el objetivo. Entradas: issue verificada, criterios, código relevante y definición. Salida: `plans/issue-N.md`, decisiones e incertidumbres. Solo puede escribir ese plan.
-- **Parada:** el coordinador comprueba el plan y entrega su aprobación pendiente. No incluye una unidad implementadora ejecutable sin aprobación y autoridad.
+## Issue completa: plan para aprobación en GitHub
 
-Si la issue es incompleta, no se habilita U1. El coordinador solicita aclaración y genera un workflow sin trabajadores ejecutables, con el bloqueo explícito.
+Estado: M-ready, sin plan/PR; delegación, planificación y comunicación autorizadas, implementación aún condicionada a aprobación.
 
-## Evento: reanudar con plan aprobado y cambio parcial propio
+- **U1 — planificador:** agente capaz/autorizado para escribir, usa feature/bug/chore. Produce únicamente `plans/issue-N.md`; devuelve dudas/errores al coordinador, no al humano.
+- El coordinador registra el contenido completo/revisión del plan en la issue y pide allí la decisión de la autoridad designada. No hace commit/push de código ni implementa para conseguir esa aprobación.
+- Workflow detenido en el gate humano. La salida al proceso contiene resultado técnico y URL de la petición, no «¿apruebas?» por el chat.
 
-Estado: plan vigente aprobado, rama del caso, diff propio; quedan pasos concretos y hay autorización de delegación e implementación/validación.
+Una respuesta «ok» sin revisión inequívoca se aclara en GitHub. Una aprobación explícita de la revisión vigente por la autoridad válida acredita M-plan_approved. No transfiere aprobación a contenido modificado ni concede nuevos permisos.
 
-Workflow generado:
+## Plan aprobado: implementación y PR
 
-- **U1 — implementador:** recibe plan, revisión del diff, pasos pendientes y contrato de implement. Produce cambio y reporte; no publica ni reescribe el plan.
-- **U2 — validador:** depende del resultado verificado de U1. Ejecuta comprobaciones del plan en el entorno propio autorizado y produce evidencias de esa revisión.
-- **U3/U4 — revisores técnico/de intención, si son requeridos y están autorizados:** dependen de U2; contextos nuevos, solo lectura sobre una revisión estable. Pueden trabajar en paralelo si no comparten efectos.
+Estado: plan vigente aprobado en GitHub, rama del caso en el checkout existente y permisos de delegación/implementación/publicación previamente concedidos.
 
-Si U1 descubre un supuesto obsoleto, el coordinador invalida la composición pendiente y genera trabajo de planificación; no ejecuta U2 como si el cambio estuviera concluido. Si un revisor pide una corrección, recompone solo las unidades afectadas.
+- **U1 — implementador:** usa implement, recibe plan y diff propio, materializa pasos y devuelve resultado/errores. No publica ni rediseña.
+- El coordinador contrasta archivos/diff con el plan para acreditar M-implemented. No añade validadores, revisores independientes, worktrees ni dossier de evidencias.
+- Sin errores bloqueantes y con permiso, realiza commit/push del alcance propio y crea/actualiza el PR correcto. Registra su URL en la issue y acredita M-pr_open solo después de observarlo.
+- Las cuatro labels de milestones pueden coexistir; no deja únicamente «PR abierto» ni da por terminado el encargo.
 
-## Evento: comentario de PR
+Si U1 devuelve un bloqueo, el coordinador lo publica en GitHub y recompone; no ejecuta la publicación pendiente como si hubiera terminado.
 
-Estado A: comentario informativo, sin requisito ni bloqueo nuevo. Resultado: workflow sin trabajadores; registrar recepción/no acción solo si está autorizado. **Comentario informativo en PR no significa editar código.**
+## Feedback en el mismo PR
 
-Estado B: objeción que exige cambiar el diseño. Composición: planificador de patch → aprobación del patch → implementador del patch → validación y revisiones afectadas. Todas las unidades usan **el mismo encargo, cambio y PR**; no generan otro plan inicial ni otro PR. Los gates de aprobación pueden detener la composición antes de implementar.
+- Informativo: puede resolverse sin trabajadores. Evita una respuesta idéntica ya registrada.
+- Corrección dentro del plan: implementador acotado si está autorizado; el coordinador conserva rama/caso/PR y reporta resultados allí.
+- Cambio de diseño: planificador de patch → petición de aprobación en la issue → reanudación solo cuando se apruebe la revisión vigente. Reevalúa únicamente los milestones afectados.
 
-El mismo tipo de evento genera workflows diferentes porque el estado y el contenido difieren.
+No usa respuestas del chat como estado; no crea otro PR ni otro plan inicial.
 
-## Evento: CI rojo
+## Error o permiso pendiente
 
-- **U1 — diagnosticador:** con delegación autorizada, identifica run/job, repo, rama, SHA y causa; produce diagnóstico con fuentes. Sin permiso de corrección, es solo lectura.
-- Con un defecto de código confirmado y permiso, el coordinador genera las unidades de corrección y validación necesarias, reutilizando el plan vigente o aprobando un patch si cambia el diseño.
-- Con un fallo externo o causa incierta, el resultado es bloqueo, no trabajo ficticio de implementación. No se publica una revisión sin validar.
+Un error de herramienta/capacidad, fallo de `/implement` o CI del PR se reporta con su referencia e impacto en la issue/PR, sin publicar logs sensibles ni declarar pruebas inexistentes. Si falta permiso de implementación, se deja la decisión pendiente en GitHub dentro de la política inicial; un comentario fuera de esa política no amplía permisos.
 
-Si el PR solo tiene checks pendientes, no lances estos agentes ni repitas commit o PR: observa y espera.
-
-## Evento: integración observada
-
-Composición posible: verificador de repo/base/SHA y CI post-merge, de solo lectura, si hace falta esa investigación. Un CI verde de otro SHA no acredita integración validada. El coordinador entrega evidencia insuficiente o aceptación pendiente, sin merge, done, cierre ni despliegue.
+Si comunicar no está autorizado, GitHub no responde o no existe destino verificable, termina con fallo técnico de entrega. No sustituye GitHub por preguntas al usuario. Un fallo de arranque de Claude antes de leer la skill tampoco garantiza un comentario: requiere un reportador externo no incluido en este starter.
 
 ## Petición cercana que no activa ADW
 
-`/chore Extrae los estilos repetidos; genera únicamente el plan.` usa chore. No es un evento para iniciar coordinación del sistema, crear un workflow multiagente ni modificar GitHub.
+`/chore Extrae los estilos repetidos; genera únicamente el plan.` usa chore de forma manual. No inicia coordinación, workflow multiagente ni efectos en GitHub por sí sola.

@@ -84,7 +84,7 @@ func run(args []string) error {
 			}
 			prompt := strings.ReplaceAll(cfg.Prompt, "{{issue_url}}", issueURL)
 			fmt.Printf("\nLanzando %s\n", issueURL)
-			agent := exec.Command("claude", "-p", prompt)
+			agent := exec.Command("claude", "-p", prompt, "--permission-prompts", "none")
 			agent.Stdout, agent.Stderr = os.Stdout, os.Stderr
 			// Stdin queda cerrado: no hay conversación ni evaluación de shell.
 			if err := agent.Run(); err != nil {
