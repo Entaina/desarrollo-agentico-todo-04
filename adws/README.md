@@ -55,7 +55,7 @@ También puedes ejecutar `go run ./adws` directamente. El script sitúa la ejecu
 
 Cada invocación equivale a `claude -p "<prompt configurado con la URL>" --permission-prompts none`. Este flag elimina herramientas que necesitan respuesta humana, como `AskUserQuestion`, y deniega solicitudes no autorizadas en vez de esperar; **no amplía permisos ni los desactiva**. Requiere Claude Code v2.1.259+. Confirma que el modo del cliente carga las skills/comandos del proyecto; no uses uno que los oculte.
 
-La skill continúa automáticamente hasta abrir el PR. Si la issue no está clara, deja sus preguntas en ella (`issue:info_requested`); cuando el humano responde, la siguiente invocación lo detecta y retoma el trabajo. Con el PR publicado, cada invocación mira también sus comentarios. Los errores se reportan en la issue y dejan la etiqueta `<artifact>:failed`. Detén el sondeo con `Ctrl+C`; si `gh` o `claude` devuelve error, el lanzador termina.
+La skill continúa automáticamente hasta abrir el PR. Si la issue no está clara, deja sus preguntas en ella (`issue:info-requested`); cuando el humano responde, la siguiente invocación lo detecta y retoma el trabajo. Con el PR publicado, cada invocación mira también sus comentarios. Los errores se reportan en la issue y dejan la etiqueta `<artifact>:failed`. Detén el sondeo con `Ctrl+C`; si `gh` o `claude` devuelve error, el lanzador termina.
 
 ## Límites de esta versión
 

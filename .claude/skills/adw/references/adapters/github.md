@@ -34,13 +34,25 @@ Lo que ocurre en una issue afecta a la Issue y lo que ocurre en un PR, a su Chan
 
 ## Estado
 
-**Proyección.** Se proyecta en la issue con etiquetas:
+**Proyección.** Se proyecta en la issue con etiquetas. Todas van en kebab-case: minúsculas y palabras separadas por guiones.
 
-- Cada stage abierto es `stage:<stage>`, por ejemplo `stage:planning`. Es también el candado del caso.
-- Cada milestone alcanzado es `<artifact>:<milestone>`, por ejemplo `plan:ready` o `change:failed`.
+- Cada stage abierto es `stage:` más el nombre del stage (`ReviewResponse` → `stage:review-response`). Es también el candado del caso.
+- Cada milestone alcanzado es el artefacto, dos puntos y el milestone (`changes_requested` del Change → `change:changes-requested`).
 - El tipo de la issue es `feature`, `bug` o `chore`. Si la issue ya trae una, respétala.
 - Los milestones terminales se observan sin etiqueta: `issue:closed` es la issue cerrada, `change:merged` es el PR integrado y `change:discarded`, el PR cerrado sin integrar.
 - `environment:ready` y `environment:released` no se proyectan: describen la máquina, no el caso. Se observan en local: la rama actual, que esté al día con `origin` y si `http://localhost:3000/healthz` responde.
+
+**Catálogo.** Son las únicas etiquetas que usa el adaptador. No inventes otras ni cambies su forma.
+
+| Familia | Etiquetas |
+| --- | --- |
+| Control | `adw`, `adw:waiting-for-human` |
+| Tipo | `feature`, `bug`, `chore` |
+| Stages | `stage:clarification`, `stage:setup`, `stage:teardown`, `stage:planning`, `stage:implementation`, `stage:publication`, `stage:review-response` |
+| Issue | `issue:clarified`, `issue:info-requested` |
+| Plan | `plan:ready`, `plan:question-raised` |
+| Change | `change:implemented`, `change:published`, `change:review-answered`, `change:changes-requested` |
+| Fallos | `issue:failed`, `environment:failed`, `plan:failed`, `change:failed` |
 
 **Observación.** Las etiquetas son el último estado proyectado. Contrástalas con lo observable: comentarios humanos posteriores al último comentario del agente, comentarios de plan, commits sin subir, si el PR contiene la cabeza de la rama.
 
