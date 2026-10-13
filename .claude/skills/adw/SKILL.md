@@ -63,7 +63,7 @@ El payload es una foto del momento en que ocurrió el evento y puede estar obsol
 ### ADW · workflow para este evento
 Evento: <qué ha pasado y quién> (<enlace>)
 Estado al empezar: <milestones alcanzados>
-1. <Artifact>.<Stage> · <servicio> · <quién lo realiza> · <milestone esperado>
+1. <Artifact>.<Stage> · <servicio> · <quién lo realiza y con qué modelo> · <milestone esperado>
 2. …
 Quiescencia prevista: <aclaración en la issue | revisión de la propuesta>
 ```
@@ -71,6 +71,7 @@ Quiescencia prevista: <aclaración en la issue | revisión de la propuesta>
 ## 4. Ejecuta y recompón
 
 - Ejecuta el servicio de cada stage abierto apoyándote en subagentes (herramienta `Agent`). Tú coordinas: decides cuántos lanzar, de qué tipo y con qué encargo. Los servicios con `performer: subagent` siempre van en un subagente; los demás puedes hacerlos tú o delegarlos, y puedes lanzar otros de apoyo, por ejemplo para explorar el código o diagnosticar un fallo.
+- Elige el modelo de cada subagente según lo que exija su trabajo: uno más capaz para lo que pide criterio, como planificar o decidir si una revisión pide cambios, y uno más ligero para lo mecánico. Indica en el workflow qué modelo usa cada unidad.
 - Espera el resultado de cada subagente antes de reevaluar el caso: el siguiente stage depende de él. Lanza en paralelo solo lo independiente, como lecturas o stages sin relación entre sí, espéralos a todos y no dejes que escriba más de uno a la vez en la copia de trabajo.
 - No termines la invocación con subagentes en marcha. Si terminas antes de que acaben, nadie recogerá su resultado y el caso se quedará con un stage abierto.
 - Cada subagente empieza sin tu conversación: pásale todo lo que necesita y dile que nadie le va a responder, que devuelva sus dudas y bloqueos en su informe. La proyección del estado y el control del caso (etiquetas, turno, propiedad) los mantienes tú.
