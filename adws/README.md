@@ -17,17 +17,19 @@ Antes de arrancar, declara en la petición/configuración confiable los permisos
 Edita **`config/adw.yml`**. No necesitas editar el código ni establecer variables de entorno:
 
 ```yaml
-repo: OWNER/REPO
+repo: ""
 label: adw
 interval_seconds: 20
 prompt: >-
   /adw {{issue_url}} --remote origin --base main
 ```
 
-- `repo`: repositorio donde buscar las issues. Se entrega vacío para que lo configures antes de arrancar.
+- `repo`: opcional. Vacío u omitido, la consulta no pasa `--repo` y `gh` usa su contexto de repositorio habitual. Con `OWNER/REPO`, se consulta ese repositorio explícitamente.
 - `label`: etiqueta que selecciona las issues que se observarán; no acredita readiness ni concede permisos.
 - `interval_seconds`: espera entre consultas, una vez terminada la lista anterior.
 - `prompt`: texto que recibe Claude. Puede invocar tu propia skill o comando; `{{issue_url}}` se sustituye por la URL de cada issue. No se evalúa como código de shell.
+
+En forks o con varios remotos, comprueba qué repositorio resolverá `gh` con `gh repo view --json nameWithOwner --jq .nameWithOwner`; no presupongas que será tu fork. El trigger no cambia el repositorio predeterminado ni la configuración Git. Si `gh` no puede resolverlo o falla la consulta, termina sin lanzar Claude.
 
 `origin` y `main` son argumentos del `/adw` del ejemplo, no opciones del trigger. Cámbialos según tu workflow. El bloque `>-` permite escribir un prompt largo en varias líneas: YAML las une con espacios.
 
@@ -68,4 +70,4 @@ El coordinador continúa automáticamente hasta crear/actualizar el PR. Si hay d
 go test -p 1 ./adws
 ```
 
-Los tests usan `gh` y `claude` simulados: no consultan GitHub ni ejecutan un agente real. Comprueban la configuración YAML, la consulta, el orden secuencial, el flag sin prompts de permiso, la sustitución literal del prompt, las paradas por error y el sondeo sin memoria. No sustituyen un ensayo completo del workflow hasta el PR.
+Los tests usan `gh` y `claude` simulados: no consultan GitHub ni ejecutan un agente real. Comprueban la configuración YAML, repo opcional o explícito, paradas ante errores de `gh`, la consulta, el orden secuencial, el flag sin prompts de permiso, la sustitución literal del prompt, las paradas por error y el sondeo sin memoria. No sustituyen un ensayo completo del workflow hasta el PR.

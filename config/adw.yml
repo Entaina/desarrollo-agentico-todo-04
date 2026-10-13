@@ -1,4 +1,4 @@
-# Repositorio cuyas issues debe consultar el trigger: OWNER/REPO.
+# Opcional: OWNER/REPO. Vacío u omitido, gh resuelve el repositorio.
 repo: ""
 label: adw
 interval_seconds: 20

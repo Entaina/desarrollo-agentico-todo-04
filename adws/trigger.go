@@ -36,9 +36,6 @@ func readConfig(path string) (config, error) {
 	if err := decoder.Decode(&extra); err != io.EOF {
 		return cfg, fmt.Errorf("la configuración debe contener un solo documento YAML")
 	}
-	if strings.TrimSpace(cfg.Repo) == "" {
-		return cfg, fmt.Errorf("configura repo con OWNER/REPO en %s", path)
-	}
 	if strings.TrimSpace(cfg.Label) == "" || cfg.IntervalSeconds < 1 {
 		return cfg, fmt.Errorf("label no puede estar vacío e interval_seconds debe ser positivo")
 	}
@@ -56,7 +53,7 @@ func run(args []string) error {
 		return err
 	}
 	if flags.NArg() != 0 {
-		return fmt.Errorf("configura el repositorio y el prompt en %s", *path)
+		return fmt.Errorf("configura el prompt y las opciones en %s", *path)
 	}
 	cfg, err := readConfig(*path)
 	if err != nil {
@@ -69,9 +66,13 @@ func run(args []string) error {
 	}
 
 	for {
-		query := exec.Command("gh", "issue", "list",
-			"--repo", cfg.Repo, "--state", "open", "--label", cfg.Label,
+		queryArgs := []string{"issue", "list"}
+		if repo := strings.TrimSpace(cfg.Repo); repo != "" {
+			queryArgs = append(queryArgs, "--repo", repo)
+		}
+		queryArgs = append(queryArgs, "--state", "open", "--label", cfg.Label,
 			"--search", "sort:created-desc", "--limit", "100", "--json", "url", "--jq", ".[].url")
+		query := exec.Command("gh", queryArgs...)
 		query.Stderr = os.Stderr
 		output, err := query.Output()
 		if err != nil {

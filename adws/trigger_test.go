@@ -127,6 +127,43 @@ func TestTriggerOnceRunsIssuesInSequence(t *testing.T) {
 	}
 }
 
+func TestTriggerRepoOptionalOmitsRepoFlag(t *testing.T) {
+	cases := []struct {
+		name string
+		body string
+	}{
+		{name: "omitted", body: strings.Replace(defaultConfig, "repo: example/todo\n", "", 1)},
+		{name: "empty", body: strings.Replace(defaultConfig, "example/todo", "\"\"", 1)},
+		{name: "whitespace", body: strings.Replace(defaultConfig, "example/todo", "'  '", 1)},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			output, events, args, err := runTrigger(t, newIssue+"\n", tc.body, nil, "--once")
+			wantArgs := []string{"issue", "list", "--state", "open", "--label", "adw", "--search", "sort:created-desc", "--limit", "100", "--json", "url", "--jq", ".[].url"}
+			wantEvents := "START:/adw " + newIssue + "\nEND:/adw " + newIssue + "\n"
+			if err != nil || events != wantEvents || !reflect.DeepEqual(strings.Split(strings.TrimSpace(args), "\n"), wantArgs) {
+				t.Fatalf("empty/omitted repo must delegate resolution to gh: err=%v, args=%q, events=%q, output=%s", err, args, events, output)
+			}
+		})
+	}
+}
+
+func TestTriggerRepoOverride(t *testing.T) {
+	body := strings.Replace(defaultConfig, "example/todo", "\" custom/todo \"", 1)
+	output, _, args, err := runTrigger(t, "", body, []string{"GH_REPO=example/ambient"}, "--once")
+	if err != nil || !strings.Contains(args, "--repo\ncustom/todo\n") {
+		t.Fatalf("configured repo must be an explicit override: err=%v, args=%q, output=%s", err, args, output)
+	}
+}
+
+func TestTriggerDefaultRepoErrorDoesNotLaunchClaude(t *testing.T) {
+	body := strings.Replace(defaultConfig, "repo: example/todo\n", "", 1)
+	output, events, args, err := runTrigger(t, newIssue+"\n", body, []string{"TEST_GH_EXIT=7"}, "--once")
+	if exit, ok := err.(*exec.ExitError); !ok || exit.ExitCode() != 7 || events != "" || strings.Contains(args, "--repo\n") || !strings.Contains(output, "consulta de issues") {
+		t.Fatalf("gh context/query error must stop before Claude: err=%v, args=%q, events=%q, output=%s", err, args, events, output)
+	}
+}
+
 func TestTriggerShellWrapper(t *testing.T) {
 	output, events, _, err := runTrigger(t, newIssue+"\n", "", []string{"TEST_USE_WRAPPER=1", "GOFLAGS=-mod=readonly"}, "--once")
 	want := "START:/adw " + newIssue + "\nEND:/adw " + newIssue + "\n"
@@ -203,7 +240,6 @@ func TestTriggerInvalidConfigurationDoesNotLaunch(t *testing.T) {
 		body string
 		args []string
 	}{
-		{name: "missing-repo", body: strings.Replace(defaultConfig, "example/todo", "\"\"", 1)},
 		{name: "missing-label", body: strings.Replace(defaultConfig, "label: adw", "label: ''", 1)},
 		{name: "zero-interval", body: strings.Replace(defaultConfig, "interval_seconds: 20", "interval_seconds: 0", 1)},
 		{name: "negative-interval", body: strings.Replace(defaultConfig, "interval_seconds: 20", "interval_seconds: -1", 1)},
@@ -232,9 +268,7 @@ func TestTriggerMissingConfig(t *testing.T) {
 }
 
 func TestTriggerProjectConfig(t *testing.T) {
-	_, err := readConfig("../config/adw.yml")
-	// El fichero puede estar todavía sin configurar o contener el repo del usuario.
-	if err != nil && !strings.Contains(err.Error(), "configura repo") {
+	if _, err := readConfig("../config/adw.yml"); err != nil {
 		t.Fatalf("invalid project config: %v", err)
 	}
 }
