@@ -6,11 +6,11 @@ Este lanzador consulta las issues abiertas con la etiqueta configurada, de más 
 
 Necesitas Go (la versión del proyecto), Bash, GitHub CLI (`gh`) y Claude Code (`claude`) v2.1.259+ en `PATH`, autenticados, y el checkout/entorno del proyecto ya disponibles. El lanzador reutiliza la librería YAML existente. `--jq` es el formateador integrado de `gh`: no necesita instalar `jq`.
 
-Este starter todo-04 incluye **una skill `/adw`**, con cuatro contratos BALSA/GSM y ejemplos, además de `/feature`, `/bug`, `/chore` y `/implement`. El trigger solo genera eventos; el motor compone el workflow de agentes. Los planificadores escriben un único plan y `/implement` materializa un plan aprobado sin commit, push ni PR; el coordinador controla los efectos posteriores autorizados.
+Este starter todo-04 incluye **una skill `/adw`**, con cuatro contratos BALSA/GSM y ejemplos, además de `/feature`, `/bug`, `/chore` y `/implement`. El trigger solo genera eventos; el motor compone el workflow de agentes. Los planificadores escriben un único plan y `/implement` lo materializa sin commit, push ni PR; el coordinador controla los efectos posteriores autorizados.
 
-En esta jornada el flujo llega hasta el PR, con **el humano fuera del chat y todo feedback en GitHub**. No incluye worktrees, artefactos de evidencia ni fases explícitas de validación/revisión independiente. Las comprobaciones normales de las skills y la CI existente permanecen.
+En esta jornada el flujo llega hasta el PR, con **el humano fuera del chat y todo feedback en GitHub**. Solo hay dos puntos de revisión humana: dudas funcionales en la issue antes del plan y revisión del resultado en el PR. Con el encargo claro y los permisos previstos, plan, implementación, commit, push y PR continúan automáticamente; no se pide aprobación del plan ni sus patches. Los errores se reportan en la issue y, si bloquean, detienen el avance dependiente. No incluye worktrees, artefactos de evidencia ni fases explícitas de validación/revisión independiente. Las comprobaciones normales de las skills y la CI existente permanecen.
 
-Antes de arrancar, declara en la petición/configuración confiable los permisos de comunicación y actuación, las identidades GitHub que pueden decidir/aprobar y su alcance. Configura los permisos reales del cliente necesarios; la skill y una etiqueta no los conceden. Prepara el catálogo de labels solo con autorización: los milestones de esta jornada son `milestone/M-ready`, `milestone/M-plan_approved`, `milestone/M-implemented` y `milestone/M-pr_open`, coexistentes y separados de `adw:state:*`. Sin permiso/destino para comentar, la ejecución no tiene canal humano válido.
+Antes de arrancar, declara en la petición/configuración confiable los permisos de comunicación y actuación, las identidades GitHub que pueden aclarar el funcional/revisar el PR y su alcance. Configura los permisos reales del cliente necesarios; la skill y una etiqueta no los conceden. Prepara el catálogo de labels solo con autorización: los milestones de esta jornada son `milestone/M-ready`, `milestone/M-implemented` y `milestone/M-pr_open`, coexistentes y separados de `adw:state:*`. Sin permiso/destino para comentar, la ejecución no tiene canal humano válido.
 
 ## Configurar
 
@@ -51,7 +51,7 @@ También puedes ejecutar `go run ./adws` directamente. El script sitúa la ejecu
 
 Cada invocación equivale a `claude -p "<prompt configurado con la URL>" --permission-prompts none`. Este flag elimina herramientas que necesitan respuesta humana, como `AskUserQuestion`, y deniega solicitudes no autorizadas en vez de esperar; **no amplía permisos ni los desactiva**. Requiere Claude Code v2.1.259+. Confirma que el modo del cliente carga las skills/comandos del proyecto; no uses uno que los oculte.
 
-El coordinador deja preguntas, planes para aprobación, bloqueos, errores y enlaces al PR en GitHub y termina la invocación. El humano responde allí; otra invocación vuelve a leer ese estado. No se arranca el trigger automáticamente ni se añade un watcher. Detén el sondeo con `Ctrl+C`; si `gh` o `claude` devuelve error, el lanzador termina.
+El coordinador continúa automáticamente hasta crear/actualizar el PR. Si hay dudas funcionales, las deja en la issue y termina esperando aclaración; los errores bloqueantes se reportan allí y detienen el avance dependiente. El humano responde en la issue o revisa en el PR; otra invocación vuelve a leer ese estado. No se detiene después del plan ni de un comentario informativo. No se arranca el trigger automáticamente ni se añade un watcher. Detén el sondeo con `Ctrl+C`; si `gh` o `claude` devuelve error, el lanzador termina.
 
 ## Límites de esta versión
 

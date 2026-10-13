@@ -11,38 +11,30 @@ Estado: comportamiento o alcance ambiguos; comunicar está autorizado, pero M-re
 - Si otro sondeo no ve respuestas ni contexto nuevo, reutiliza la petición; no vuelve a comentarla. Si una respuesta solo resuelve parte, mantiene pendientes las demás.
 - Al quedar el encargo claro, acredita M-ready y proyecta `milestone/M-ready` cuando esté autorizado. No confunde esa label con la prueba de claridad.
 
-## Issue completa: plan para aprobación en GitHub
+## Issue completa: automáticamente hasta el PR
 
-Estado: M-ready, sin plan/PR; delegación, planificación y comunicación autorizadas, implementación aún condicionada a aprobación.
+Estado: M-ready, sin plan/PR; rama del caso en el checkout existente y permisos de delegación, planificación, implementación, comunicación y publicación previamente concedidos.
 
 - **U1 — planificador:** agente capaz/autorizado para escribir, usa feature/bug/chore. Produce únicamente `plans/issue-N.md`; devuelve dudas/errores al coordinador, no al humano.
-- El coordinador registra el contenido completo/revisión del plan en la issue y pide allí la decisión de la autoridad designada. No hace commit/push de código ni implementa para conseguir esa aprobación.
-- Workflow detenido en el gate humano. La salida al proceso contiene resultado técnico y URL de la petición, no «¿apruebas?» por el chat.
-
-Una respuesta «ok» sin revisión inequívoca se aclara en GitHub. Una aprobación explícita de la revisión vigente por la autoridad válida acredita M-plan_approved. No transfiere aprobación a contenido modificado ni concede nuevos permisos.
-
-## Plan aprobado: implementación y PR
-
-Estado: plan vigente aprobado en GitHub, rama del caso en el checkout existente y permisos de delegación/implementación/publicación previamente concedidos.
-
-- **U1 — implementador:** usa implement, recibe plan y diff propio, materializa pasos y devuelve resultado/errores. No publica ni rediseña.
+- El coordinador comprueba que el plan corresponde al encargo y lanza U2, sin pedir aprobación del plan ni terminar la invocación entre ambos.
+- **U2 — implementador:** usa implement, recibe plan, diff propio y autorización inicial, materializa pasos y devuelve resultado/errores. No publica ni rediseña.
 - El coordinador contrasta archivos/diff con el plan para acreditar M-implemented. No añade validadores, revisores independientes, worktrees ni dossier de evidencias.
-- Sin errores bloqueantes y con permiso, realiza commit/push del alcance propio y crea/actualiza el PR correcto. Registra su URL en la issue y acredita M-pr_open solo después de observarlo.
-- Las cuatro labels de milestones pueden coexistir; no deja únicamente «PR abierto» ni da por terminado el encargo.
+- Sin errores bloqueantes y con permiso, realiza commit/push del alcance propio, incluido el plan, y crea/actualiza el PR correcto. Registra su URL en la issue y acredita M-pr_open solo después de observarlo.
+- Las tres labels de milestones pueden coexistir; no deja únicamente «PR abierto». El humano revisa el resultado en el PR; el coordinador no hace merge ni cierra el encargo.
 
-Si U1 devuelve un bloqueo, el coordinador lo publica en GitHub y recompone; no ejecuta la publicación pendiente como si hubiera terminado.
+Si el plan ya existe y está vigente, puede omitir U1. Si aparece una duda funcional, vuelve a la aclaración en la issue antes de completar/ejecutar el plan. Si una unidad devuelve un error bloqueante, lo publica en la issue y detiene el avance dependiente; no publica el cambio como si hubiera terminado.
 
 ## Feedback en el mismo PR
 
 - Informativo: puede resolverse sin trabajadores. Evita una respuesta idéntica ya registrada.
 - Corrección dentro del plan: implementador acotado si está autorizado; el coordinador conserva rama/caso/PR y reporta resultados allí.
-- Cambio de diseño: planificador de patch → petición de aprobación en la issue → reanudación solo cuando se apruebe la revisión vigente. Reevalúa únicamente los milestones afectados.
+- Cambio de diseño dentro del encargo: planificador de patch → implementador → actualización del mismo PR, sin aprobación humana del plan. Reevalúa únicamente los milestones afectados. El feedback ambiguo se aclara en el PR.
 
 No usa respuestas del chat como estado; no crea otro PR ni otro plan inicial.
 
 ## Error o permiso pendiente
 
-Un error de herramienta/capacidad, fallo de `/implement` o CI del PR se reporta con su referencia e impacto en la issue/PR, sin publicar logs sensibles ni declarar pruebas inexistentes. Si falta permiso de implementación, se deja la decisión pendiente en GitHub dentro de la política inicial; un comentario fuera de esa política no amplía permisos.
+Un error de herramienta/capacidad, fallo de `/implement` o CI del PR se reporta con su referencia e impacto en la issue, sin publicar logs sensibles ni declarar pruebas inexistentes. Si bloquea, se detiene el avance dependiente. Si falta permiso de implementación, se informa del permiso ausente como bloqueo, no se añade una revisión del plan ni se amplían permisos mediante comentarios.
 
 Si comunicar no está autorizado, GitHub no responde o no existe destino verificable, termina con fallo técnico de entrega. No sustituye GitHub por preguntas al usuario. Un fallo de arranque de Claude antes de leer la skill tampoco garantiza un comentario: requiere un reportador externo no incluido en este starter.
 
