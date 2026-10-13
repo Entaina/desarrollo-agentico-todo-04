@@ -6,6 +6,8 @@ Este lanzador consulta las issues abiertas con la etiqueta configurada, de más 
 
 Necesitas Go (la versión del proyecto), Bash, Git, GitHub CLI (`gh`) y Claude Code (`claude`) v2.1.259+ en `PATH`, autenticados, y el checkout/entorno del proyecto ya disponibles. El lanzador reutiliza la librería YAML existente.
 
+Antes de arrancar el trigger, abre Claude Code una vez de forma interactiva en el checkout y acepta el diálogo de confianza. Si el directorio no es de confianza, `claude -p` ignora los permisos de `.claude/settings.json` («this workspace has not been trusted») y la skill no podrá hacer su trabajo sin preguntar.
+
 Este starter todo-04 incluye la skill **`/adw`**, que reutiliza `/feature`, `/bug`, `/chore` y `/implement`. La skill no tiene el flujo escrito: su especificación describe artefactos con sus ciclos de vida, servicios y asociaciones, y ante cada evento compone el workflow que necesita ese caso. El trigger solo decide cuándo invocarla.
 
 El humano está **fuera del chat** e interviene solo en GitHub, en dos puntos de control: responder las preguntas del agente en la issue, si no está clara, y revisar el PR. Si el humano comenta el PR, el agente atiende la revisión en el mismo PR; el flujo termina cuando el humano lo integra o lo cierra. Si algo falla, el agente lo cuenta en la issue y se detiene; no hay bucles de corrección.
