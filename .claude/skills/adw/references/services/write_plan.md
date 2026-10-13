@@ -15,11 +15,12 @@ skills: [feature, bug, chore]
 
 ## Qué hace
 
-1. Escribe el plan con la skill del tipo (`.claude/skills/<tipo>/SKILL.md`) en la ruta que da el adaptador. Planifica leyendo el código: no ejecutes, depures ni modifiques la aplicación. Si encuentras un problema ajeno al encargo, anótalo como observación y no lo investigues.
-2. Si hay peticiones de cambio, escribe una revisión solo con lo que cambia y cita las peticiones que recoge.
+1. Prepara el encargo para la skill del tipo (`.claude/skills/<tipo>/SKILL.md`): la especificación y, si hay peticiones de cambio, esas peticiones con los comentarios que las motivan, el plan vigente como contexto y el aviso de que la rama ya lo implementa. La skill no sabe de revisiones: recibe un encargo y escribe un plan completo en la ruta que da el adaptador.
+2. Ejecuta la skill. Planifica leyendo el código: no ejecutes, depures ni modifiques la aplicación. Si encuentras un problema ajeno al encargo, anótalo como observación y no lo investigues.
 3. Si encuentras una duda funcional que la especificación no resuelve, no preguntes: devuélvela como resultado.
 4. Comprueba que el plan existe y que cubre la especificación y las peticiones.
-5. Publica el plan para informar, no para que lo aprueben.
+5. Si es una revisión, encabeza el plan con qué cambia respecto a la revisión anterior y qué peticiones recoge.
+6. Publica el plan para informar, no para que lo aprueben.
 
 ## Resultado
 
