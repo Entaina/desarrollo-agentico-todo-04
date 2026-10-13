@@ -1,43 +1,35 @@
-# BALSA — Associations
+# Asociaciones
 
-Vincula eventos, WorkItem, Plan, Change y decisiones; define qué debe reevaluarse. No cablea un workflow fijo. Lifecycles determina los guards y la vigencia final de los milestones.
+Cablean los contratos de los artefactos: a qué artefacto concreto corresponde cada entrada. Es el único sitio donde un artefacto conoce a otro.
 
-## Resolver el caso
+## Relaciones
 
-- **Issue → WorkItem:** URL completa; `#N` requiere repo explícito o remoto inequívoco.
-- **Comentario → issue/PR:** verifica padre, autor, contenido vigente y qué pregunta/decisión/revisión responde.
-- **PR → WorkItem:** una única issue asociada mediante `closingIssuesReferences`, del repositorio/caso exactos.
-- **WorkItem → Plan/Change:** plan, rama y PR conservan el mismo encargo; busca también asociaciones fuera del nombre convencional. Un listado parcial no prueba ausencia.
-- **CI → Change → PR/WorkItem:** para reportar un error, verifica repo, evento, rama y SHA y resuelve el cambio/PR/caso correcto. No transforma CI en un nuevo milestone o servicio de validación de esta jornada.
+Los artefactos se referencian por identidad, nunca por su funcionamiento interno.
 
-Un evento puede ser una observación, aclaración, comentario, error o reanudación. Una URL de issue sola no demuestra que sea nueva ni obliga a reiniciar. Recupera las páginas necesarias: truncación/error API no demuestra ausencia de respuestas, decisiones o PRs.
+- Cada Issue tiene como mucho un Environment, un Plan y un Change. Juntos forman un caso.
+- El Environment, el Plan y el Change conocen la identidad de su Issue.
 
-Si hay asociaciones ambiguas, referencias cruzadas, autoría incierta o PR cerrado sin integrar, bloquea los efectos del caso. **No preguntes por el chat:** informa en la issue ya verificada; si no se resuelve el WorkItem, usa el PR/issue origen verificable o `--report` explícito solo para diagnóstico autorizado. No lo conviertas en el encargo ni elijas otro caso. Sin destino verificable, termina con fallo de entrega técnico.
+## Cableado
 
-Resuelve repo/remoto/base desde la petición confiable y asociaciones verificadas. `origin` solo sirve si existe y corresponde al repo; sin base explícita, consulta la rama por defecto. Verifica destino antes de escribir. Usa `--repo OWNER/REPO` en `gh issue`/`gh pr`/`gh run`; en `gh api`, host `github.com` y ruta explícita `repos/OWNER/REPO/...`.
+| Entrada | Se conecta con |
+| --- | --- |
+| `Plan.specification` | La Issue del caso. Está clara mientras la Issue tenga `clarified`. |
+| `Plan.change_request` | El Change del caso. Llega una petición, con los comentarios que la motivan, cada vez que alcanza `changes_requested`. |
+| `Change.specification` | El Plan del caso. Está listo mientras el Plan tenga `ready`. |
+| `Issue.questions` | El Plan del caso. Llega una duda cada vez que alcanza `question_raised`. |
+| `Environment.work_item` | La Issue del caso: su identidad, tipo y título. Está clara mientras la Issue tenga `clarified`. |
+| `Plan.environment` | El Environment del caso. Está listo mientras tenga `ready`. |
+| `Change.environment` | El Environment del caso. Está listo mientras tenga `ready`, y su rama es la del Change. |
 
-## Propagación e invalidación
+## Eventos
 
-- **Aclaración de definición:** reevalúa M-ready. Resolver una pregunta no resuelve todas. Si cambian alcance/criterios, determina si también quedan obsoletos el plan y las partes del cambio afectadas.
-- **Nueva revisión del plan:** reevalúa M-implemented respecto al contenido vigente e identifica los pasos pendientes o que necesitan corrección. No introduce aprobación humana ni un milestone nuevo.
-- **Cambio del diff/head:** reevalúa M-implemented respecto al plan. No invalida por defecto M-ready ni un plan cuyo diseño/alcance sigue vigente.
-- **Feedback de PR:** informativo puede no requerir trabajo. Si exige cambiar diseño, prepara y ejecuta el patch dentro del alcance autorizado sin pedir aprobación del plan; si exige corrección dentro del plan, compón solo el trabajo necesario. Si el feedback es ambiguo, acláralo en el PR antes de continuar. Conserva **el mismo encargo, cambio y PR**; no duplica el PR ni otro plan inicial.
-- **Error del trabajador, comando o CI:** reporta referencia, impacto y acción pendiente en la issue del caso; si bloquea, detén el avance dependiente. No convierte un fallo en otro encargo ni habilita cambios fuera del alcance.
-- **PR cerrado:** reevalúa M-pr_open. Una integración observada o cierre automático de la issue no acredita aceptación ni autoriza merge, done o despliegue.
-- **Respuesta/decisión humana:** verifica autoridad, revisión, alcance y qué duda/guard satisface. No es una nueva instrucción superior ni un grant de permisos.
+Un evento afecta al artefacto sobre el que ocurre: lo que pasa en la petición de trabajo afecta a la Issue, y lo que pasa en la propuesta de código o en su revisión, al Change. Desde ese artefacto se llega al caso por las relaciones. Un evento que no afecta a ningún artefacto de un caso no tiene efecto.
 
-Solo invalida los resultados afectados. Registra cambios de milestones en la issue y actualiza las etiquetas autorizadas conforme a Lifecycles. La traza y las etiquetas no sustituyen los observables.
+## Cascadas
 
-## Comunicación y reanudación
+Se derivan del cableado. Están aquí para leer de un vistazo cómo se propaga una invalidación.
 
-Las dudas funcionales antes del plan y los errores del caso se registran en **la issue**. No hay preguntas de aprobación del plan ni sus patches. El feedback específico del cambio se responde en **el PR**, y la issue enlaza ese PR/decisión sin copiar conversaciones completas. Una pregunta bloqueante originada en un trabajador siempre vuelve al coordinador.
-
-Antes de escribir, lee preguntas, respuestas y trazas existentes. Si ya está pendiente la misma pregunta/decisión sobre el mismo contenido, reutiliza su URL y termina sin repetir comentario. Si cambió el contexto, explica el cambio y pregunta solo lo pendiente. No edites/borras respuestas humanas; conserva las decisiones anteriores cuando publiques una nueva revisión.
-
-Después de escribir, verifica URL/ID, destino y contenido. La siguiente invocación lee GitHub de nuevo, no su memoria del chat. No trata comentarios propios, citas o respuestas parciales como una respuesta humana completa. Una respuesta obsoleta no resuelve dudas funcionales vigentes.
-
-El trigger sigue pasando una URL de issue secuencialmente, sin memoria, entornos nuevos, reintentos ni recuperación. Si la issue sigue abierta y etiquetada, otro sondeo puede recoger respuestas; no es un watcher de comentarios y no garantiza inmediatez ni deduplicación mecánica. Salir con éxito tras registrar una espera no significa que haya PR. Si Claude falla antes de cargar la skill, el trigger solo registra el error del proceso: este hueco de reporte externo no está resuelto por los contratos.
-
-## PR
-
-Usa `Closes https://github.com/OWNER/REPO/issues/N` para la issue exacta. Comprueba repo/rama/base/asociaciones antes de crearlo; si ya existe, actualízalo. Verifica y registra su URL en la issue antes de acreditar/proyectar M-pr_open. Abrirlo no equivale a terminar ni autoriza al motor a integrarlo.
+- **Una revisión pide cambios.** `Change.changes_requested` llega al Plan como `change_request` e invalida `Plan.ready`. La `specification` del Change deja de estar lista, lo que invalida `implemented` y, con él, `published`. Se reabren `Planning`, `Implementation` y `Publication`. Al volver a alcanzar `published`, `ReviewResponse` responde explicando lo que ha cambiado.
+- **El planificador encuentra una duda.** `Plan.question_raised` llega a la Issue por `questions` e invalida `clarified`. `Clarification` pregunta en la issue y el caso queda quieto hasta que responde el humano. Cuando la Issue vuelve a `clarified`, se invalida `question_raised` y se reabre `Planning`.
+- **Otro caso usa la copia de trabajo.** Se invalida `Environment.ready`. No se invalida nada más: los guards de `Planning`, `Implementation` y `Publication` esperan, y `Setup` se reabre en cuanto alguno lo necesita.
+- **El humano cambia el alcance de la issue.** Se invalida `Issue.clarified`. La `specification` del Plan deja de estar clara, lo que invalida `ready`, y la cascada sigue por el Change.
