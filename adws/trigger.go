@@ -1,6 +1,8 @@
 package main
 
 import (
+	"bytes"
+	"encoding/json"
 	"errors"
 	"flag"
 	"fmt"
@@ -13,11 +15,27 @@ import (
 	"go.yaml.in/yaml/v3"
 )
 
+// Etiquetas de control de la skill adw: ver .claude/skills/adw/references/adapters/github.md.
+const (
+	waitingLabel = "adw:waiting-for-human"
+	stagePrefix  = "stage:"
+)
+
 type config struct {
 	Repo            string `yaml:"repo"`
 	Label           string `yaml:"label"`
 	IntervalSeconds int    `yaml:"interval_seconds"`
 	Prompt          string `yaml:"prompt"`
+}
+
+type issue struct {
+	URL    string `json:"url"`
+	Labels []struct {
+		Name string `json:"name"`
+	} `json:"labels"`
+	Assignees []struct {
+		Login string `json:"login"`
+	} `json:"assignees"`
 }
 
 func readConfig(path string) (config, error) {
@@ -39,10 +57,26 @@ func readConfig(path string) (config, error) {
 	if strings.TrimSpace(cfg.Label) == "" || cfg.IntervalSeconds < 1 {
 		return cfg, fmt.Errorf("label no puede estar vacío e interval_seconds debe ser positivo")
 	}
-	if !strings.Contains(cfg.Prompt, "{{issue_url}}") {
-		return cfg, fmt.Errorf("prompt debe contener {{issue_url}}")
+	if !strings.Contains(cfg.Prompt, "{{payload}}") {
+		return cfg, fmt.Errorf("prompt debe contener {{payload}}")
 	}
 	return cfg, nil
+}
+
+// agentTurn dice si el turno del caso es del agente: nadie espera al humano,
+// no hay un stage abierto y la issue está libre o asignada a esta cuenta.
+func agentTurn(it issue, me string) bool {
+	for _, label := range it.Labels {
+		if label.Name == waitingLabel || strings.HasPrefix(label.Name, stagePrefix) {
+			return false
+		}
+	}
+	for _, assignee := range it.Assignees {
+		if !strings.EqualFold(assignee.Login, me) {
+			return false
+		}
+	}
+	return true
 }
 
 func run(args []string) error {
@@ -59,11 +93,18 @@ func run(args []string) error {
 	if err != nil {
 		return err
 	}
-	for _, tool := range []string{"gh", "claude"} {
+	for _, tool := range []string{"gh", "claude", "git"} {
 		if _, err := exec.LookPath(tool); err != nil {
 			return fmt.Errorf("no se encuentra %s en PATH", tool)
 		}
 	}
+	login := exec.Command("gh", "api", "user", "--jq", ".login")
+	login.Stderr = os.Stderr
+	output, err := login.Output()
+	if err != nil {
+		return fmt.Errorf("cuenta de gh: %w", err)
+	}
+	me := strings.TrimSpace(string(output))
 
 	for {
 		queryArgs := []string{"issue", "list"}
@@ -71,25 +112,45 @@ func run(args []string) error {
 			queryArgs = append(queryArgs, "--repo", repo)
 		}
 		queryArgs = append(queryArgs, "--state", "open", "--label", cfg.Label,
-			"--search", "sort:created-desc", "--limit", "100", "--json", "url", "--jq", ".[].url")
+			"--search", "sort:created-desc", "--limit", "100", "--json", "url,number,title,labels,assignees,updatedAt")
 		query := exec.Command("gh", queryArgs...)
 		query.Stderr = os.Stderr
 		output, err := query.Output()
 		if err != nil {
 			return fmt.Errorf("consulta de issues: %w", err)
 		}
-		for _, issueURL := range strings.Split(string(output), "\n") {
-			issueURL = strings.TrimSpace(issueURL)
-			if issueURL == "" {
+		var snapshots []json.RawMessage
+		if len(bytes.TrimSpace(output)) > 0 {
+			if err := json.Unmarshal(output, &snapshots); err != nil {
+				return fmt.Errorf("respuesta de la consulta de issues: %w", err)
+			}
+		}
+		for _, snapshot := range snapshots {
+			var it issue
+			if err := json.Unmarshal(snapshot, &it); err != nil {
+				return fmt.Errorf("issue de la consulta: %w", err)
+			}
+			if !agentTurn(it, me) {
 				continue
 			}
-			prompt := strings.ReplaceAll(cfg.Prompt, "{{issue_url}}", issueURL)
-			fmt.Printf("\nLanzando %s\n", issueURL)
+			status, err := exec.Command("git", "status", "--porcelain").Output()
+			if err != nil {
+				return fmt.Errorf("estado del checkout: %w", err)
+			}
+			if len(bytes.TrimSpace(status)) > 0 {
+				return fmt.Errorf("el checkout tiene cambios sin registrar: déjalo limpio antes de lanzar %s", it.URL)
+			}
+			var payload bytes.Buffer
+			if err := json.Compact(&payload, snapshot); err != nil {
+				return err
+			}
+			prompt := strings.ReplaceAll(cfg.Prompt, "{{payload}}", payload.String())
+			fmt.Printf("\nLanzando %s\n", it.URL)
 			agent := exec.Command("claude", "-p", prompt, "--permission-prompts", "none")
 			agent.Stdout, agent.Stderr = os.Stdout, os.Stderr
 			// Stdin queda cerrado: no hay conversación ni evaluación de shell.
 			if err := agent.Run(); err != nil {
-				return fmt.Errorf("Claude para %s: %w", issueURL, err)
+				return fmt.Errorf("Claude para %s: %w", it.URL, err)
 			}
 		}
 		if *once {

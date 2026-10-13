@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"os"
 	"os/exec"
@@ -15,7 +16,44 @@ import (
 const (
 	newIssue      = "https://github.com/example/todo/issues/12"
 	oldIssue      = "https://github.com/example/todo/issues/3"
-	defaultConfig = "repo: example/todo\nlabel: adw\ninterval_seconds: 20\nprompt: /adw {{issue_url}}\n"
+	defaultConfig = "repo: example/todo\nlabel: adw\ninterval_seconds: 20\nprompt: /adw {{payload}}\n"
+)
+
+var queryJSON = []string{"--json", "url,number,title,labels,assignees,updatedAt"}
+
+// snapshot devuelve la foto JSON compacta de una issue, como la pasa el trigger.
+func snapshot(url string, labels []string, assignees ...string) string {
+	type label struct {
+		Name string `json:"name"`
+	}
+	type user struct {
+		Login string `json:"login"`
+	}
+	it := struct {
+		URL       string  `json:"url"`
+		Labels    []label `json:"labels"`
+		Assignees []user  `json:"assignees"`
+	}{URL: url, Labels: []label{{Name: "adw"}}, Assignees: []user{}}
+	for _, name := range labels {
+		it.Labels = append(it.Labels, label{Name: name})
+	}
+	for _, login := range assignees {
+		it.Assignees = append(it.Assignees, user{Login: login})
+	}
+	data, err := json.Marshal(it)
+	if err != nil {
+		panic(err)
+	}
+	return string(data)
+}
+
+func list(snapshots ...string) string {
+	return "[" + strings.Join(snapshots, ",") + "]\n"
+}
+
+var (
+	newSnapshot = snapshot(newIssue, nil)
+	oldSnapshot = snapshot(oldIssue, nil)
 )
 
 func TestTriggerHelperProcess(t *testing.T) {
@@ -54,6 +92,11 @@ func runTrigger(t *testing.T, issues, configBody string, env []string, args ...s
 	write("issues", issues)
 	write("gh", `#!/usr/bin/env bash
 set -euo pipefail
+if [[ "$*" == "api user --jq .login" ]]; then
+  [[ "${TEST_GH_USER_EXIT:-0}" == 0 ]] || exit "$TEST_GH_USER_EXIT"
+  printf 'agente\n'
+  exit 0
+fi
 printf '%s\n' "$@" > "$TEST_ROOT/gh-args"
 [[ "${TEST_GH_EXIT:-0}" == 0 ]] || exit "$TEST_GH_EXIT"
 cat "$TEST_ROOT/issues"
@@ -67,6 +110,11 @@ printf '%s' "$PWD" > "$TEST_ROOT/cwd"
 [[ "${TEST_CLAUDE_EXIT:-0}" == 0 ]] || exit "$TEST_CLAUDE_EXIT"
 /bin/sleep 0.02
 printf 'END:%s\n' "$2" >> "$TEST_ROOT/events"
+`)
+	write("git", `#!/usr/bin/env bash
+set -euo pipefail
+[[ "$*" == "status --porcelain" ]] || exit 90
+[[ "${TEST_GIT_DIRTY:-0}" == 0 ]] || printf ' M main.go\n'
 `)
 	write("sleep", `#!/usr/bin/env bash
 set -euo pipefail
@@ -113,15 +161,15 @@ touch "$TEST_ROOT/slept"
 }
 
 func TestTriggerOnceRunsIssuesInSequence(t *testing.T) {
-	output, events, args, err := runTrigger(t, newIssue+"\n"+oldIssue+"\n", "", nil, "--once")
+	output, events, args, err := runTrigger(t, list(newSnapshot, oldSnapshot), "", nil, "--once")
 	if err != nil {
 		t.Fatalf("%v: %s", err, output)
 	}
-	wantArgs := []string{"issue", "list", "--repo", "example/todo", "--state", "open", "--label", "adw", "--search", "sort:created-desc", "--limit", "100", "--json", "url", "--jq", ".[].url"}
+	wantArgs := append([]string{"issue", "list", "--repo", "example/todo", "--state", "open", "--label", "adw", "--search", "sort:created-desc", "--limit", "100"}, queryJSON...)
 	if got := strings.Split(strings.TrimSpace(args), "\n"); !reflect.DeepEqual(got, wantArgs) {
 		t.Fatalf("query must request newest open adw issues: %q", got)
 	}
-	want := "START:/adw " + newIssue + "\nEND:/adw " + newIssue + "\nSTART:/adw " + oldIssue + "\nEND:/adw " + oldIssue + "\n"
+	want := "START:/adw " + newSnapshot + "\nEND:/adw " + newSnapshot + "\nSTART:/adw " + oldSnapshot + "\nEND:/adw " + oldSnapshot + "\n"
 	if events != want {
 		t.Fatalf("want sequential invocations %q, got %q", want, events)
 	}
@@ -138,9 +186,9 @@ func TestTriggerRepoOptionalOmitsRepoFlag(t *testing.T) {
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			output, events, args, err := runTrigger(t, newIssue+"\n", tc.body, nil, "--once")
-			wantArgs := []string{"issue", "list", "--state", "open", "--label", "adw", "--search", "sort:created-desc", "--limit", "100", "--json", "url", "--jq", ".[].url"}
-			wantEvents := "START:/adw " + newIssue + "\nEND:/adw " + newIssue + "\n"
+			output, events, args, err := runTrigger(t, list(newSnapshot), tc.body, nil, "--once")
+			wantArgs := append([]string{"issue", "list", "--state", "open", "--label", "adw", "--search", "sort:created-desc", "--limit", "100"}, queryJSON...)
+			wantEvents := "START:/adw " + newSnapshot + "\nEND:/adw " + newSnapshot + "\n"
 			if err != nil || events != wantEvents || !reflect.DeepEqual(strings.Split(strings.TrimSpace(args), "\n"), wantArgs) {
 				t.Fatalf("empty/omitted repo must delegate resolution to gh: err=%v, args=%q, events=%q, output=%s", err, args, events, output)
 			}
@@ -158,15 +206,15 @@ func TestTriggerRepoOverride(t *testing.T) {
 
 func TestTriggerDefaultRepoErrorDoesNotLaunchClaude(t *testing.T) {
 	body := strings.Replace(defaultConfig, "repo: example/todo\n", "", 1)
-	output, events, args, err := runTrigger(t, newIssue+"\n", body, []string{"TEST_GH_EXIT=7"}, "--once")
+	output, events, args, err := runTrigger(t, list(newSnapshot), body, []string{"TEST_GH_EXIT=7"}, "--once")
 	if exit, ok := err.(*exec.ExitError); !ok || exit.ExitCode() != 7 || events != "" || strings.Contains(args, "--repo\n") || !strings.Contains(output, "consulta de issues") {
 		t.Fatalf("gh context/query error must stop before Claude: err=%v, args=%q, events=%q, output=%s", err, args, events, output)
 	}
 }
 
 func TestTriggerShellWrapper(t *testing.T) {
-	output, events, _, err := runTrigger(t, newIssue+"\n", "", []string{"TEST_USE_WRAPPER=1", "GOFLAGS=-mod=readonly"}, "--once")
-	want := "START:/adw " + newIssue + "\nEND:/adw " + newIssue + "\n"
+	output, events, _, err := runTrigger(t, list(newSnapshot), "", []string{"TEST_USE_WRAPPER=1", "GOFLAGS=-mod=readonly"}, "--once")
+	want := "START:/adw " + newSnapshot + "\nEND:/adw " + newSnapshot + "\n"
 	if err != nil || events != want {
 		t.Fatalf("wrapper must load YAML and launch the configured prompt: err=%v, events=%q, output=%s", err, events, output)
 	}
@@ -177,15 +225,15 @@ func TestTriggerConfigurablePromptIsLiteral(t *testing.T) {
 label: mi-etiqueta
 interval_seconds: 7
 prompt: >-
-  /mi-flujo {{issue_url}} --remote origin --base main;
-  $(exit 99) "{{issue_url}}"
+  /mi-flujo {{payload}} --remote origin;
+  $(exit 99) "{{payload}}"
 `
-	_, events, args, err := runTrigger(t, newIssue+"\n", body, []string{"ADW_PROMPT=este valor antiguo no se usa"})
+	_, events, args, err := runTrigger(t, list(newSnapshot), body, []string{"ADW_PROMPT=este valor antiguo no se usa"})
 	if exit, ok := err.(*exec.ExitError); !ok || exit.ExitCode() != 73 {
 		t.Fatalf("unexpected exit: %v", err)
 	}
-	template := `/mi-flujo {{issue_url}} --remote origin --base main; $(exit 99) "{{issue_url}}"`
-	prompt := strings.ReplaceAll(template, "{{issue_url}}", newIssue)
+	template := `/mi-flujo {{payload}} --remote origin; $(exit 99) "{{payload}}"`
+	prompt := strings.ReplaceAll(template, "{{payload}}", newSnapshot)
 	pass := "START:" + prompt + "\nEND:" + prompt + "\nSLEEP:7\n"
 	if events != pass+pass || !strings.Contains(args, "--label\nmi-etiqueta\n") {
 		t.Fatalf("YAML config must control the literal prompt, label and interval: %q, %q", events, args)
@@ -193,9 +241,9 @@ prompt: >-
 }
 
 func TestTriggerPromptCannotOverridePermissionPrompts(t *testing.T) {
-	body := strings.Replace(defaultConfig, "prompt: /adw {{issue_url}}", "prompt: /adw {{issue_url}} --permission-prompts terminal", 1)
-	output, events, _, err := runTrigger(t, newIssue+"\n", body, nil, "--once")
-	prompt := "/adw " + newIssue + " --permission-prompts terminal"
+	body := strings.Replace(defaultConfig, "prompt: /adw {{payload}}", "prompt: /adw {{payload}} --permission-prompts terminal", 1)
+	output, events, _, err := runTrigger(t, list(newSnapshot), body, nil, "--once")
+	prompt := "/adw " + newSnapshot + " --permission-prompts terminal"
 	want := "START:" + prompt + "\nEND:" + prompt + "\n"
 	if err != nil || events != want {
 		t.Fatalf("prompt must stay literal while CLI permission prompts remain none: err=%v, events=%q, output=%s", err, events, output)
@@ -203,32 +251,66 @@ func TestTriggerPromptCannotOverridePermissionPrompts(t *testing.T) {
 }
 
 func TestTriggerEmptyListDoesNotInvokeClaude(t *testing.T) {
-	output, events, _, err := runTrigger(t, "", "", nil, "--once")
-	if err != nil || events != "" {
-		t.Fatalf("err=%v, events=%q, output=%s", err, events, output)
+	for _, issues := range []string{"", "[]\n"} {
+		output, events, _, err := runTrigger(t, issues, "", nil, "--once")
+		if err != nil || events != "" {
+			t.Fatalf("issues=%q: err=%v, events=%q, output=%s", issues, err, events, output)
+		}
+	}
+}
+
+func TestTriggerOnlyLaunchesCasesInAgentTurn(t *testing.T) {
+	issues := list(
+		snapshot("https://github.com/example/todo/issues/1", []string{"adw:waiting-for-human"}),
+		snapshot("https://github.com/example/todo/issues/2", []string{"stage:planning"}),
+		snapshot("https://github.com/example/todo/issues/3", nil, "otra-cuenta"),
+		snapshot("https://github.com/example/todo/issues/4", nil, "agente", "otra-cuenta"),
+		snapshot("https://github.com/example/todo/issues/5", []string{"feature", "plan:ready"}, "Agente"),
+		snapshot("https://github.com/example/todo/issues/6", []string{"issue:failed"}),
+	)
+	output, events, _, err := runTrigger(t, issues, "", nil, "--once")
+	mine := snapshot("https://github.com/example/todo/issues/5", []string{"feature", "plan:ready"}, "Agente")
+	free := snapshot("https://github.com/example/todo/issues/6", []string{"issue:failed"})
+	want := "START:/adw " + mine + "\nEND:/adw " + mine + "\nSTART:/adw " + free + "\nEND:/adw " + free + "\n"
+	if err != nil || events != want {
+		t.Fatalf("only free or own cases without waiting or stage labels must launch: err=%v, events=%q, output=%s", err, events, output)
+	}
+}
+
+func TestTriggerStopsOnDirtyCheckout(t *testing.T) {
+	output, events, _, err := runTrigger(t, list(newSnapshot), "", []string{"TEST_GIT_DIRTY=1"}, "--once")
+	if exit, ok := err.(*exec.ExitError); !ok || exit.ExitCode() != 2 || events != "" || !strings.Contains(output, "checkout") {
+		t.Fatalf("a dirty checkout must stop before Claude: err=%v, events=%q, output=%s", err, events, output)
+	}
+}
+
+func TestTriggerStopsWhenGitHubAccountIsUnknown(t *testing.T) {
+	output, events, args, err := runTrigger(t, list(newSnapshot), "", []string{"TEST_GH_USER_EXIT=4"}, "--once")
+	if exit, ok := err.(*exec.ExitError); !ok || exit.ExitCode() != 4 || events != "" || args != "" || !strings.Contains(output, "cuenta de gh") {
+		t.Fatalf("without the gh account the trigger cannot tell its own cases: err=%v, events=%q, args=%q, output=%s", err, events, args, output)
 	}
 }
 
 func TestTriggerStopsOnGitHubError(t *testing.T) {
-	_, events, _, err := runTrigger(t, newIssue+"\n", "", []string{"TEST_GH_EXIT=7"}, "--once")
+	_, events, _, err := runTrigger(t, list(newSnapshot), "", []string{"TEST_GH_EXIT=7"}, "--once")
 	if err == nil || events != "" {
 		t.Fatalf("err=%v, events=%q", err, events)
 	}
 }
 
 func TestTriggerStopsOnClaudeError(t *testing.T) {
-	_, events, _, err := runTrigger(t, newIssue+"\n"+oldIssue+"\n", "", []string{"TEST_CLAUDE_EXIT=9"}, "--once")
-	if err == nil || events != "START:/adw "+newIssue+"\n" {
+	_, events, _, err := runTrigger(t, list(newSnapshot, oldSnapshot), "", []string{"TEST_CLAUDE_EXIT=9"}, "--once")
+	if err == nil || events != "START:/adw "+newSnapshot+"\n" {
 		t.Fatalf("must stop before launching second issue: err=%v, events=%q", err, events)
 	}
 }
 
 func TestTriggerPollsWithoutRememberingIssues(t *testing.T) {
-	_, events, _, err := runTrigger(t, newIssue+"\n", "", nil)
+	_, events, _, err := runTrigger(t, list(newSnapshot), "", nil)
 	if exit, ok := err.(*exec.ExitError); !ok || exit.ExitCode() != 73 {
 		t.Fatalf("unexpected exit: %v", err)
 	}
-	pass := "START:/adw " + newIssue + "\nEND:/adw " + newIssue + "\nSLEEP:20\n"
+	pass := "START:/adw " + newSnapshot + "\nEND:/adw " + newSnapshot + "\nSLEEP:20\n"
 	if events != pass+pass {
 		t.Fatalf("this minimal trigger deliberately has no memory: %q", events)
 	}
@@ -243,7 +325,8 @@ func TestTriggerInvalidConfigurationDoesNotLaunch(t *testing.T) {
 		{name: "missing-label", body: strings.Replace(defaultConfig, "label: adw", "label: ''", 1)},
 		{name: "zero-interval", body: strings.Replace(defaultConfig, "interval_seconds: 20", "interval_seconds: 0", 1)},
 		{name: "negative-interval", body: strings.Replace(defaultConfig, "interval_seconds: 20", "interval_seconds: -1", 1)},
-		{name: "missing-issue-marker", body: strings.Replace(defaultConfig, "{{issue_url}}", "", 1)},
+		{name: "missing-payload-marker", body: strings.Replace(defaultConfig, "{{payload}}", "", 1)},
+		{name: "old-issue-marker", body: strings.Replace(defaultConfig, "{{payload}}", "{{issue_url}}", 1)},
 		{name: "malformed-yaml", body: "repo: [\n"},
 		{name: "unknown-field", body: defaultConfig + "unexpected: true\n"},
 		{name: "duplicate-field", body: defaultConfig + "repo: otro/repo\n"},
@@ -253,7 +336,7 @@ func TestTriggerInvalidConfigurationDoesNotLaunch(t *testing.T) {
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			output, events, ghArgs, err := runTrigger(t, newIssue+"\n", tc.body, nil, tc.args...)
+			output, events, ghArgs, err := runTrigger(t, list(newSnapshot), tc.body, nil, tc.args...)
 			if exit, ok := err.(*exec.ExitError); !ok || exit.ExitCode() != 2 || events != "" || ghArgs != "" {
 				t.Fatalf("invalid configuration must stop before querying: err=%v, events=%q, args=%q, output=%s", err, events, ghArgs, output)
 			}

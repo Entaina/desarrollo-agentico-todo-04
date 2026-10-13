@@ -15,7 +15,7 @@ Para ir del PR a su issue: `gh pr view <URL> --json closingIssuesReferences`. Pa
 
 ## Eventos
 
-El payload puede venir de un webhook, de GitHub Actions, de la API de eventos o directamente de un humano, en lenguaje natural: «quiero hacer la issue #12», «he añadido un comentario en la issue X». Si viene de un humano, el mensaje es el evento: identifica la issue o el PR que menciona.
+El payload puede venir de un webhook, de GitHub Actions, de la API de eventos o directamente de un humano, en lenguaje natural: «quiero hacer la issue #12», «he añadido un comentario en la issue X». Si viene de un humano, el mensaje es el evento: identifica la issue o el PR que menciona. El trigger del proyecto (`adws/`) envía la foto JSON de una issue abierta y admitida cuyo turno es tuyo: sin `adw:waiting-for-human`, sin stage abierto y sin otro dueño. No dice qué ha cambiado: lo averiguas al reconstruir el estado.
 
 Lo que ocurre en una issue afecta a la Issue y lo que ocurre en un PR, a su Change. Un comentario en la conversación de un PR llega como comentario de una issue que tiene `pull_request`: afecta al Change.
 

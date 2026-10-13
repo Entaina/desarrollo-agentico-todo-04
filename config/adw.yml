@@ -3,6 +3,7 @@ repo: ""
 label: adw
 interval_seconds: 20
 
-# Invoca el workflow que hayas creado. {{issue_url}} recibe cada issue.
+# Invoca el workflow que hayas creado. {{payload}} recibe la foto JSON de cada
+# issue cuyo turno es del agente.
 prompt: >-
-  /adw {{issue_url}} --base main
+  /adw {{payload}}

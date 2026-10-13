@@ -50,7 +50,8 @@ El payload es una foto del momento en que ocurrió el evento y puede estar obsol
 1. Comprueba que el checkout está limpio (`git status --porcelain` vacío). Si no lo está, termina con error sin tocar el caso: el problema es del entorno, no del caso.
 2. Para cada artefacto del caso, determina con su adaptador qué milestones están alcanzados y qué stages abiertos.
 3. Aplica el evento: comprueba si invalida algún milestone y propaga la invalidación.
-4. Termina sin publicar ni cambiar nada si el control no te deja actuar (el caso es de otro, el turno es del humano o hay un stage abierto), si hay un milestone terminal o si no se cumple ningún guard (el caso sigue en quiescencia). La única excepción: si el humano te devolvió el turno y no hay nada nuevo, vuelve a cedérselo antes de terminar.
+4. Si el control no te deja actuar (el caso es de otro, el turno es del humano o hay un stage abierto), termina sin publicar ni cambiar nada.
+5. Si hay un milestone terminal o no se cumple ningún guard, no hay nada que hacer: cede el turno al humano, diciéndole qué esperas de él, y termina sin cambiar nada más. Un caso parado nunca se queda con tu turno.
 
 ## 3. Compón el workflow del caso
 
