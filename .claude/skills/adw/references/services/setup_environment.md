@@ -1,7 +1,6 @@
 ---
 name: setup_environment
 description: Deja la copia de trabajo en la rama del caso, al día, con el entorno de desarrollo en marcha.
-performer: coordinator
 skills: [env:start]
 ---
 

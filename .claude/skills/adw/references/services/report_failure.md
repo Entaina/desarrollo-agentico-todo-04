@@ -1,7 +1,6 @@
 ---
 name: report_failure
 description: Comunica al humano que un stage ha fallado y cómo reintentar.
-performer: coordinator
 ---
 
 # report_failure

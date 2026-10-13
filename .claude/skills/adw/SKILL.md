@@ -20,7 +20,7 @@ Lee la definición completa antes de decidir nada. Es la fuente de verdad: no la
 
 - [GSM](references/gsm.md): cómo se lee un ciclo de vida y cómo se evalúa. Léelo primero.
 - Artefactos, cada uno con su información, su contrato y su ciclo de vida: [Issue](references/artifacts/issue.md), [Environment](references/artifacts/environment.md), [Plan](references/artifacts/plan.md) y [Change](references/artifacts/change.md).
-- Servicios, uno por fichero, como skills: el trabajo que ejecuta un stage, sus entradas y su resultado. Pueden usar otras skills del proyecto: [clarify](references/services/clarify.md), [setup_environment](references/services/setup_environment.md), [teardown_environment](references/services/teardown_environment.md), [write_plan](references/services/write_plan.md), [implement](references/services/implement.md), [publish](references/services/publish.md), [answer_review](references/services/answer_review.md) y [report_failure](references/services/report_failure.md).
+- Servicios, uno por fichero, como skills: el trabajo que ejecuta un stage, sus entradas y su resultado. No dicen quién los ejecuta: eso lo decides tú. Pueden usar otras skills del proyecto: [clarify](references/services/clarify.md), [setup_environment](references/services/setup_environment.md), [teardown_environment](references/services/teardown_environment.md), [write_plan](references/services/write_plan.md), [implement](references/services/implement.md), [publish](references/services/publish.md), [answer_review](references/services/answer_review.md) y [report_failure](references/services/report_failure.md).
 - [Asociaciones](references/associations.md): cómo se cablean los contratos y a qué artefacto afecta cada evento.
 - [Control](references/control.md): admisión, propiedad y turno; cuándo puede actuar el motor sobre un caso.
 
@@ -70,7 +70,7 @@ Quiescencia prevista: <aclaración en la issue | revisión de la propuesta>
 
 ## 4. Ejecuta y recompón
 
-- Ejecuta el servicio de cada stage abierto apoyándote en subagentes (herramienta `Agent`). Tú coordinas: decides cuántos lanzar, de qué tipo y con qué encargo. Los servicios con `performer: subagent` siempre van en un subagente; los demás puedes hacerlos tú o delegarlos, y puedes lanzar otros de apoyo, por ejemplo para explorar el código o diagnosticar un fallo.
+- Ejecuta el servicio de cada stage abierto. Tú coordinas: decides si lo haces tú o lo delegas en subagentes (herramienta `Agent`), cuántos lanzar, de qué tipo y con qué encargo. Delega lo que necesita un contexto limpio o llenaría el tuyo, como planificar o implementar, y lanza otros de apoyo si te hacen falta, por ejemplo para explorar el código o diagnosticar un fallo.
 - Elige el modelo de cada subagente según lo que exija su trabajo: uno más capaz para lo que pide criterio, como planificar o decidir si una revisión pide cambios, y uno más ligero para lo mecánico. Indica en el workflow qué modelo usa cada unidad.
 - Espera el resultado de cada subagente antes de reevaluar el caso: el siguiente stage depende de él. Lanza en paralelo solo lo independiente, como lecturas o stages sin relación entre sí, espéralos a todos y no dejes que escriba más de uno a la vez en la copia de trabajo.
 - No termines la invocación con subagentes en marcha. Si terminas antes de que acaben, nadie recogerá su resultado y el caso se quedará con un stage abierto.

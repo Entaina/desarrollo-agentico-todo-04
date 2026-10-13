@@ -1,7 +1,6 @@
 ---
 name: answer_review
 description: Atiende los comentarios humanos de una revisión. Los responde, o constata que piden cambios que el plan todavía no recoge.
-performer: coordinator
 ---
 
 # answer_review

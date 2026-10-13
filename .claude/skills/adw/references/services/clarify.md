@@ -1,7 +1,6 @@
 ---
 name: clarify
 description: Comprueba si una petición de trabajo está clara y clasificada. Si no lo está, publica las preguntas que bloquean el trabajo.
-performer: coordinator
 ---
 
 # clarify

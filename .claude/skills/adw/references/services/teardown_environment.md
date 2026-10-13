@@ -1,7 +1,6 @@
 ---
 name: teardown_environment
 description: Para el entorno de desarrollo del caso cuando ya no queda trabajo que lo necesite, sin tocar la copia de trabajo.
-performer: coordinator
 skills: [env:stop]
 ---
 

@@ -69,7 +69,7 @@ El plan vive en la issue, no en la rama. `plans/issue-N.md` es solo una copia de
 | `clarify` | Publica las preguntas como comentario en la issue. Si la clasificas, pon la etiqueta del tipo. |
 | `setup_environment` | Si el comentario de control no tiene rama, asígnala como `<tipo>/issue-N-<slug>` (el slug sale del título, en minúsculas y con guiones), con la rama por defecto del repositorio como base (`gh repo view OWNER/REPO --json defaultBranchRef`), y regístrala. Si la rama no existe en `origin`, `git fetch origin <base>` y `git switch -c <rama> origin/<base>`. Si existe, `git fetch origin <rama>`, `git switch <rama>` y `git merge --ff-only origin/<rama>`. Después ejecuta `env:start`. |
 | `teardown_environment` | Ejecuta `env:stop`. |
-| `write_plan` | El subagente escribe el plan en `plans/issue-N.md`. Publícalo en la issue como comentario que empiece por `<!-- adw:plan -->`, indicando la revisión y las peticiones que recoge, y borra el fichero. |
+| `write_plan` | El plan se escribe en `plans/issue-N.md`. Publícalo en la issue como comentario que empiece por `<!-- adw:plan -->`, indicando la revisión y las peticiones que recoge, y borra el fichero. |
 | `implement` | Antes de lanzarlo, escribe el plan vigente en `plans/issue-N.md`. Bórralo cuando termine: no forma parte del Change. |
 | `publish` | Hace commit con un mensaje convencional según el tipo (`feat:`, `fix:` o `chore:`) y `git push -u origin <rama>`. Si no hay PR, lo abre con `gh pr create --repo OWNER/REPO --base <base> --head <rama>`, con `Closes <URL de la issue>` y el enlace al plan vigente en la descripción, y comenta el enlace en la issue. Si ya existe, el push lo actualiza. |
 | `answer_review` | Responde con comentarios en el PR. |
