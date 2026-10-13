@@ -16,7 +16,7 @@ skills: [feature, bug, chore]
 
 ## Qué hace
 
-1. Lanza un subagente `general-purpose` con la herramienta `Agent` y la skill del tipo (`.claude/skills/<tipo>/SKILL.md`). Empieza sin tu conversación: pásale las entradas y una instrucción explícita. Nadie le va a responder: si encuentra una duda funcional o un bloqueo, debe devolverlo en su informe en lugar de preguntar. No publica ni hace commit.
+1. Lanza un subagente `general-purpose` con la herramienta `Agent` y la skill del tipo (`.claude/skills/<tipo>/SKILL.md`). Empieza sin tu conversación: pásale las entradas y una instrucción explícita. Nadie le va a responder: si encuentra una duda funcional o un bloqueo, debe devolverlo en su informe en lugar de preguntar. Planifica leyendo el código: no ejecuta, depura ni modifica la aplicación. Si encuentra un problema ajeno al encargo, lo anota como observación en su informe y no lo investiga. No publica ni hace commit.
 2. Si hay peticiones de cambio, el subagente escribe una revisión solo con lo que cambia y cita las peticiones que recoge.
 3. Comprueba que el plan existe y que cubre la especificación y las peticiones.
 4. Publica el plan para informar, no para que lo aprueben.

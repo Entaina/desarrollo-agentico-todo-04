@@ -11,7 +11,7 @@ La propuesta de código que revisa el humano.
 
 - **Entradas:**
   - `specification`: el plan que debe materializar, y si está listo.
-  - `environment`: dónde se trabaja, y si está listo.
+  - `environment`: dónde se trabaja, y si está listo (`ready`) o ya liberado (`released`).
 - **Expone:** `changes_requested`.
 
 ## Ciclo de vida
@@ -19,7 +19,7 @@ La propuesta de código que revisa el humano.
 | Stage | Guard | Servicio | Milestones |
 | --- | --- | --- | --- |
 | `Implementation` | La `specification` y el `environment` están listos y el Change no tiene `implemented` | [`implement`](../services/implement.md) | `implemented` |
-| `Publication` | Con `implemented`, el `environment` listo y sin `published` | [`publish`](../services/publish.md) | `published` |
+| `Publication` | Con `implemented`, el `environment` liberado y sin `published` | [`publish`](../services/publish.md) | `published` |
 | `ReviewResponse` | Con `published`, sin `changes_requested` y con comentarios humanos sin responder | [`answer_review`](../services/answer_review.md) | `review_answered`, `changes_requested` |
 
 | Milestone | Se alcanza cuando | Se invalida cuando |

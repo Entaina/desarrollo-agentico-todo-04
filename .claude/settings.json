@@ -33,6 +33,8 @@
       "Bash(buffalo *)",
       "Bash(which *)",
       "Bash(lsof *)",
+      "Bash(pgrep *)",
+      "Bash(kill *)",
       "Bash(sleep *)",
       "Bash(curl http://localhost:3000/*)",
       "Bash(curl -s http://localhost:3000/*)",
