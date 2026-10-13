@@ -41,7 +41,8 @@ Lee el adaptador de cada artefacto que toques. Todo lo que publiques, observes o
 
 1. Averigua en qué servicio ha ocurrido, qué ha pasado, sobre qué y quién lo ha provocado.
 2. Con el adaptador de ese servicio, resuelve a qué artefacto afecta y, por las relaciones, a qué caso pertenece.
-3. Si no afecta a ningún caso, el caso no está admitido (una petición directa de un humano lo admite) o el evento lo has producido tú, termina sin hacer nada.
+3. Si afecta a un caso, asocia esta sesión a su issue para que su log quede junto al de las demás invocaciones del caso: `bash .claude/skills/adw/scripts/log.sh case ${CLAUDE_SESSION_ID} <número de la issue>`.
+4. Si no afecta a ningún caso, el caso no está admitido (una petición directa de un humano lo admite) o el evento lo has producido tú, termina sin hacer nada.
 
 El payload es una foto del momento en que ocurrió el evento y puede estar obsoleta. Úsalo para saber qué ha pasado y dónde, no como estado.
 

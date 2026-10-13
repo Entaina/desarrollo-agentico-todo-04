@@ -24,6 +24,7 @@
       "Bash(git commit *)",
       "Bash(git push *)",
       "Bash(rm plans/*)",
+      "Bash(bash .claude/skills/adw/scripts/log.sh case *)",
       "Bash(docker info *)",
       "Bash(docker ps *)",
       "Bash(docker compose *)",
@@ -59,6 +60,91 @@
       "Bash(docker compose down *)",
       "Bash(docker compose down)",
       "Bash(docker volume rm *)"
+    ]
+  },
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/skills/adw/scripts/log.sh\" hook"
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/skills/adw/scripts/log.sh\" hook"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/skills/adw/scripts/log.sh\" hook"
+          }
+        ]
+      }
+    ],
+    "PostToolUseFailure": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/skills/adw/scripts/log.sh\" hook"
+          }
+        ]
+      }
+    ],
+    "SubagentStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/skills/adw/scripts/log.sh\" hook"
+          }
+        ]
+      }
+    ],
+    "SubagentStop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/skills/adw/scripts/log.sh\" hook"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/skills/adw/scripts/log.sh\" hook"
+          }
+        ]
+      }
+    ],
+    "SessionEnd": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/skills/adw/scripts/log.sh\" hook"
+          }
+        ]
+      }
     ]
   }
 }

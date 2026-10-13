@@ -66,6 +66,16 @@ Cada invocación equivale a `claude -p "<prompt configurado con la foto de la is
 
 La skill continúa automáticamente hasta abrir el PR. Si la issue no está clara, deja sus preguntas en ella (`issue:info-requested`) y te cede el turno. Cuando respondes y quitas `adw:waiting-for-human`, la siguiente consulta lanza la skill y retoma el trabajo. Con el PR publicado ocurre lo mismo con tus comentarios de revisión. Los errores se reportan en la issue y dejan la etiqueta `<artifact>:failed`; quitar `adw:waiting-for-human` es reintentar. Detén el sondeo con `Ctrl+C`; si `gh`, `git` o `claude` devuelven error, el lanzador termina.
 
+## Ver qué hace el agente
+
+Cada invocación de `/adw` deja un log en `.adw/logs/<issue>/<iteración>_<sesión>.jsonl`, con una línea JSON por cada evento: el prompt, cada llamada a una herramienta con su resultado o su fallo, los subagentes que empiezan y terminan, y el final de la sesión. Las llamadas de los subagentes también quedan ahí, identificadas con `agent_id` y `agent_type`. Para seguir una issue en directo:
+
+```bash
+tail -f .adw/logs/12/*.jsonl
+```
+
+La sesión escribe en `.adw/logs/unknown-<n>/` hasta que la skill sabe a qué issue afecta y la asocia con `.claude/skills/adw/scripts/log.sh case`. Si el evento no afecta a ningún caso, el log se queda ahí. Lo escriben los hooks de `.claude/settings.json`, que no registran nada en las sesiones que no invocan `adw`. `.adw/` está en `.gitignore`, así que los logs no ensucian el checkout.
+
 ## Límites de esta versión
 
 - El lanzador no modifica etiquetas, no cierra issues ni recuerda las que ha ejecutado: en cada consulta vuelve a mirar el estado de control de las issues. Abrir un PR no cierra la issue por sí solo.
